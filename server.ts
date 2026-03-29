@@ -13,7 +13,7 @@ async function startServer() {
   app.use(express.json());
 
   // API routes
-  app.post("/api/build-model", async (req, res) => {
+  app.post("/api/mymodels", async (req, res) => {
     const { modelName, triggerWord, artistName } = req.body;
     
     console.log(`Starting backend build process for model: ${modelName}`);
