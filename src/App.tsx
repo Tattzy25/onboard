@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UploadCloud, Archive, Sparkles, Check, Layers, Globe, Users, Copy, Share2, Download, X } from 'lucide-react';
+import { UploadCloud, Archive, Check, Layers, Globe, Users, Copy, Share2, Download, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { cn } from './lib/utils';
 
@@ -26,27 +26,46 @@ const platformInstructions: Record<string, string[]> = {
   ],
 };
 
-const defaultConfig = {
-  title: 'Chrome Gen 1',
-};
+const DEFAULT_MODEL_TITLE = 'Chrome Gen 1';
 
 export default function App() {
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
   const [triggerWord, setTriggerWord] = useState('');
   const [modelName, setModelName] = useState('');
+  const [artistName, setArtistName] = useState('');
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [activePlatform, setActivePlatform] = useState('shopify');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState('');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [config, setConfig] = useState(defaultConfig);
+  const [modelStatus, setModelStatus] = useState<'idle' | 'training' | 'online'>('idle');
 
   const handleTrain = () => {
+    setModelStatus('training');
     setStep(2);
   };
 
-  const handleTrainingComplete = () => {};
+  const addTag = (raw: string) => {
+    const value = raw.trim();
+    if (!value) return;
+
+    setTags((prev) => {
+      if (prev.length >= 3) return prev;
+      if (prev.some((t) => t.toLowerCase() === value.toLowerCase())) return prev;
+      return [...prev, value];
+    });
+  };
+
+  const removeTag = (value: string) => {
+    setTags((prev) => prev.filter((t) => t !== value));
+  };
+
+  const handleTrainingComplete = () => {
+    setModelStatus('online');
+  };
 
   const handleGoToGenerator = () => {
     setStep(3);
@@ -62,7 +81,7 @@ export default function App() {
 
   const handleCopyEmbed = async () => {
     await navigator.clipboard.writeText(`<iframe 
-  src="${window.location.origin}/embed/${config.title.toLowerCase().replace(/\s+/g, '-')}" 
+  src="${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}" 
   width="100%" 
   height="800px" 
   frameborder="0" 
@@ -75,9 +94,9 @@ export default function App() {
   const handleShareEmbed = async () => {
     if (navigator.share) {
       await navigator.share({
-        title: config.title,
+        title: modelName || DEFAULT_MODEL_TITLE,
         text: 'Embed this generator on your site',
-        url: `${window.location.origin}/embed/${config.title.toLowerCase().replace(/\s+/g, '-')}`,
+        url: `${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}`,
       });
     }
   };
@@ -85,7 +104,7 @@ export default function App() {
   const handleDownloadCode = () => {
     const blob = new Blob([
       `<iframe 
-  src="${window.location.origin}/embed/${config.title.toLowerCase().replace(/\s+/g, '-')}" 
+  src="${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}" 
   width="100%" 
   height="800px" 
   frameborder="0" 
@@ -112,17 +131,17 @@ export default function App() {
 
   const embedCode = useMemo(
     () => `<iframe 
-  src="${window.location.origin}/embed/${config.title.toLowerCase().replace(/\s+/g, '-')}" 
+  src="${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}" 
   width="100%" 
   height="800px" 
   frameborder="0" 
   style="border-radius: 32px; border: 1px solid #eaeaea;"
 ></iframe>`,
-    [config.title],
+    [modelName],
   );
 
   return (
-    <div className="min-h-screen bg-[#f7f4ef] text-black flex flex-col">
+    <div className="min-h-screen bg-[#f7f4ef] text-black flex flex-col pt-24 md:pt-28">
       <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow-lg border border-gray-200 mx-auto">
         <button
           onClick={() => setStep(1)}
@@ -151,12 +170,12 @@ export default function App() {
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">1. Upload</h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="flex flex-col items-center">
                 <div
                   {...getRootProps()}
                   style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                   className={cn(
-                    'w-full max-w-[300px] aspect-square rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center',
+                    'w-full max-w-[300px] h-[240px] rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center',
                     isDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30',
                   )}
                 >
@@ -176,8 +195,62 @@ export default function App() {
                   )}
                 </div>
               </div>
-              <div className="pt-4 flex items-center justify-center opacity-0 pointer-events-none">
-                <div className="h-6"></div>
+
+              <div className="w-full max-w-[300px] mx-auto pt-3">
+                <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Artist Name</label>
+                <input
+                  type="text"
+                  value={artistName}
+                  onChange={(e) => setArtistName(e.target.value)}
+                  style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                  className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
+                  placeholder="E.G. JANE DOE"
+                />
+              </div>
+
+              <div className="w-full max-w-[300px] mx-auto pt-3 flex flex-col gap-3">
+                <label className="block text-[10px] font-bold tracking-[0.2em] text-black uppercase text-center">Tags (up to 3)</label>
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      const next = tagInput.replace(/,/g, '').trim();
+                      if (!next) return;
+                      addTag(next);
+                      setTagInput('');
+                    }
+                  }}
+                  onBlur={() => {
+                    const next = tagInput.replace(/,/g, '').trim();
+                    if (!next) return;
+                    addTag(next);
+                    setTagInput('');
+                  }}
+                  disabled={tags.length >= 3}
+                  style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                  className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent disabled:opacity-40"
+                  placeholder={tags.length >= 3 ? 'MAX 3 TAGS' : 'TYPE A TAG + PRESS ENTER'}
+                />
+
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {tags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                        title="Remove tag"
+                      >
+                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase">{tag}</span>
+                        <X className="w-3 h-3" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -211,15 +284,16 @@ export default function App() {
                       placeholder="E.G. CHROME GEN 1"
                     />
                   </div>
-                  <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-xl flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 flex-shrink-0">
-                      <Sparkles className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      <p className="text-[9px] font-bold tracking-widest text-green-500 uppercase mb-0.5">Card Preview</p>
-                      <p className="text-xs font-black uppercase truncate">{modelName || 'MY MODEL'}</p>
-                      <p className="text-[10px] text-gray-400 uppercase truncate">Trigger: {triggerWord || 'STYLE'}</p>
-                    </div>
+                  <div>
+                    <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Description</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={4}
+                      style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                      className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-medium tracking-wide placeholder:text-gray-300 bg-transparent resize-none"
+                      placeholder="A short description of your style / what clients can expect…"
+                    />
                   </div>
                 </div>
               </div>
@@ -269,10 +343,18 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="aspect-square rounded-xl bg-gray-200 overflow-hidden shadow-md">
-                      <img src="https://images.unsplash.com/photo-1611501271407-f28c24cb9c1b?q=80&w=400&auto=format&fit=crop" alt="preview" className="w-full h-full object-cover" />
+                      <img
+                        src="https://cdn.shopify.com/s/files/1/0649/4155/5787/files/out-0_6_e5098566-287d-4b06-8dab-0e3afc498bed.webp?v=1773995584"
+                        alt="preview"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="aspect-square rounded-xl bg-gray-200 overflow-hidden shadow-md">
-                      <img src="https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?q=80&w=400&auto=format&fit=crop" alt="preview" className="w-full h-full object-cover" />
+                      <img
+                        src="https://cdn.shopify.com/s/files/1/0649/4155/5787/files/2.png?v=1773705283"
+                        alt="preview"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   </div>
                 </div>
@@ -311,7 +393,13 @@ export default function App() {
           <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
 
           <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center">
-            <ArtistCard modelName={modelName || config.title} triggerWord={triggerWord} files={files} isOnline={false} />
+            <ArtistCard
+              modelName={modelName || DEFAULT_MODEL_TITLE}
+              artistName={artistName}
+              description={description}
+              tags={tags}
+              status={modelStatus}
+            />
             <button
               onClick={handleGoToGenerator}
               className="mt-8 bg-black text-white px-8 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 animate-in slide-in-from-bottom-4 duration-500 border-4 border-black"
@@ -326,7 +414,16 @@ export default function App() {
         <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
           <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 py-16 px-4 animate-in fade-in duration-500">
             <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center animate-in slide-in-from-left-8 duration-700">
-              <ArtistCard modelName={modelName || config.title} triggerWord={triggerWord} files={files} isOnline={true} />
+              <div className="pb-4 mb-4">
+                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Artist Card</h2>
+              </div>
+              <ArtistCard
+                modelName={modelName || DEFAULT_MODEL_TITLE}
+                artistName={artistName}
+                description={description}
+                tags={tags}
+                status={modelStatus}
+              />
             </div>
 
             <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
@@ -407,60 +504,71 @@ export default function App() {
         </div>
       )}
 
-      <button
-        onClick={() => setIsSettingsOpen(true)}
-        className="fixed bottom-6 right-6 bg-black text-white rounded-full px-5 py-3 text-xs font-bold tracking-[0.2em] uppercase shadow-xl hover:bg-gray-900 transition-colors"
-      >
-        Settings
-      </button>
-
-      {isSettingsOpen && (
-        <div className="fixed inset-0 bg-black/20 z-40 flex justify-end">
-          <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-50 border-l border-gray-100 flex flex-col">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <h2 className="text-sm font-bold tracking-[0.2em] uppercase">Widget Settings</h2>
-              <button onClick={() => setIsSettingsOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-8 overflow-y-auto flex-1">
-              <div className="space-y-4">
-                <label className="block text-xs font-bold tracking-widest text-gray-400 uppercase">Model Title</label>
-                <input
-                  type="text"
-                  value={config.title}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, title: e.target.value }))}
-                  className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-black/5 outline-none transition-all"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-function ArtistCard({ modelName, triggerWord, files, isOnline }: { modelName: string; triggerWord: string; files: File[]; isOnline: boolean }) {
-  const previewImage = files[0] ? URL.createObjectURL(files[0]) : 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?q=80&w=800&auto=format&fit=crop';
+function ArtistCard({
+  modelName,
+  artistName,
+  tags,
+  description,
+  status,
+}: {
+  modelName: string;
+  artistName: string;
+  tags: string[];
+  description: string;
+  status: 'idle' | 'training' | 'online';
+}) {
+  const statusLabel = status === 'online' ? 'Online' : status === 'training' ? 'Training' : 'Offline';
+  const statusClass =
+    status === 'online'
+      ? 'bg-green-100 text-green-700'
+      : status === 'training'
+        ? 'bg-yellow-100 text-yellow-700'
+        : 'bg-gray-100 text-gray-600';
+
+  const visibleTags = (tags || [])
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 3);
 
   return (
     <div className="w-full max-w-[320px] rounded-[32px] bg-white shadow-2xl border border-gray-100 overflow-hidden">
-      <div className="aspect-[4/5] bg-gray-100 overflow-hidden">
-        <img src={previewImage} alt={modelName} className="w-full h-full object-cover" />
-      </div>
-      <div className="p-6 space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">Artist Card</p>
-            <h3 className="text-lg font-black uppercase">{modelName}</h3>
+      <div className="p-6 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">Model</p>
+            <h3 className="text-lg font-black uppercase truncate">{modelName}</h3>
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 mt-2">Artist</p>
+            <p className="text-sm font-black uppercase truncate">{artistName || '—'}</p>
           </div>
-          <div className={cn('px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase', isOnline ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')}>
-            {isOnline ? 'Online' : 'Training'}
+
+          <div className={cn('px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase flex-shrink-0', statusClass)}>
+            {statusLabel}
           </div>
         </div>
-        <p className="text-xs text-gray-500 uppercase tracking-widest">Trigger: {triggerWord || 'STYLE'}</p>
+
+        {visibleTags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {visibleTags.map((tag) => (
+              <span
+                key={tag}
+                className="px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase bg-gray-100 text-gray-700"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">Description</p>
+          <pre className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">
+            {description?.length ? description : '—'}
+          </pre>
+        </div>
       </div>
     </div>
   );
