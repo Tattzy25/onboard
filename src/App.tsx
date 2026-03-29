@@ -141,7 +141,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f7f4ef] text-black flex flex-col pt-24 md:pt-28">
+    <div className="min-h-screen bg-white text-black flex flex-col pt-24 md:pt-28">
       <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow-lg border border-gray-200 mx-auto">
         <button
           onClick={() => setStep(1)}
