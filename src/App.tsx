@@ -155,7 +155,7 @@ export default function App() {
     if (!value) return;
 
     setTags((prev) => {
-      if (prev.length >= 3) return prev;
+      if (prev.length >= 4) return prev;
       if (prev.some((t) => t.toLowerCase() === value.toLowerCase())) return prev;
       return [...prev, value];
     });
@@ -375,7 +375,7 @@ export default function App() {
                 {files.length > 0 ? (
                   <div
                     style={{ borderColor: zipValidation.status === 'error' ? '#dc2626' : '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                    className="w-full max-w-[300px] min-h-[120px] rounded-3xl p-4 flex flex-col items-center justify-center bg-transparent text-center"
+                    className="w-full max-w-[300px] min-h-[60px] rounded-xl p-4 flex flex-col items-center justify-center bg-transparent text-center"
                   >
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -411,14 +411,25 @@ export default function App() {
                     {...getRootProps()}
                     style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                     className={cn(
-                      'w-full max-w-[300px] h-[110px] rounded-3xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center',
+                      'w-full max-w-[300px] h-[55px] rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center',
                       isDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30',
                     )}
                   >
                     <input {...getInputProps()} />
-                    <UploadCloud className={cn('w-8 h-8 mb-1 transition-colors', isDragActive ? 'text-black' : 'text-gray-400')} />
-                    <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">ZIPPED FOLDER</div>
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">.ZIP (20-30 High-Res Images)</div>
+                    <div className="flex items-center gap-1.5">
+                      <UploadCloud className={cn('w-5 h-5 transition-colors', isDragActive ? 'text-black' : 'text-gray-400')} />
+                      <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">ZIPPED FOLDER</div>
+                      <span className="relative inline-block cursor-help group">
+                        <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+                        </svg>
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2.5 w-80 text-[11px] font-bold text-white bg-gray-900 rounded-lg whitespace-normal opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed shadow-lg">
+                          <span className="block text-center">Minimum 1024px x 1024px resolution. 20-30 images of your tattoo style. For best results, keep your style consistent.</span>
+                          <span className="block text-center italic mt-1.5">Place your high-resolution images into one folder, then zip and compress it. This folder will be deleted one hour after your model is trained. Make sure you keep copies of your original images.</span>
+                        </span>
+                      </span>
+                    </div>
+                    <div className="h-4"></div>
                   </div>
                 )}
 
@@ -427,7 +438,7 @@ export default function App() {
                   {...getCoverRootProps()}
                   style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                   className={cn(
-                    'w-full max-w-[300px] h-[110px] rounded-3xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center mt-4',
+                    'w-full max-w-[300px] h-[55px] rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center mt-4',
                     isCoverDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30',
                   )}
                 >
@@ -477,7 +488,7 @@ export default function App() {
               </div>
 
               <div className="w-full max-w-[300px] mx-auto pt-3 flex flex-col gap-3">
-                <label className="block text-[10px] font-bold tracking-[0.2em] text-black uppercase text-center">Tags (up to 3)</label>
+                <label className="block text-[10px] font-bold tracking-[0.2em] text-black uppercase text-center">Tags (up to 4)</label>
                 <input
                   type="text"
                   value={tagInput}
@@ -497,10 +508,10 @@ export default function App() {
                     addTag(next);
                     setTagInput('');
                   }}
-                  disabled={tags.length >= 3}
+                  disabled={tags.length >= 4}
                   style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                   className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent disabled:opacity-40"
-                  placeholder={tags.length >= 3 ? 'MAX 3 TAGS' : 'TYPE A TAG + PRESS ENTER'}
+                  placeholder={tags.length >= 4 ? 'MAX 4 TAGS' : 'TYPE A TAG + PRESS ENTER'}
                 />
 
                 {tags.length > 0 && (
@@ -553,11 +564,22 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Description</label>
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <label className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">Description</label>
+                      <span className="relative inline-block cursor-help group">
+                        <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+                        </svg>
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[9px] font-bold text-white bg-black rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          320 characters max
+                        </span>
+                      </span>
+                    </div>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={4}
+                      maxLength={320}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                       className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-medium tracking-wide placeholder:text-gray-300 bg-transparent resize-none"
                       placeholder="A short description of your style / what clients can expect…"
