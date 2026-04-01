@@ -43,9 +43,35 @@ export default function App() {
   const [generatedImage, setGeneratedImage] = useState('');
   const [modelStatus, setModelStatus] = useState<'idle' | 'training' | 'online'>('idle');
 
-  const handleTrain = () => {
+  const handleTrain = async () => {
     setModelStatus('training');
     setStep(2);
+
+    try {
+      const formData = new FormData();
+      formData.append('modelName', modelName);
+      formData.append('triggerWord', triggerWord);
+      formData.append('artistName', artistName);
+
+      if (files.length > 0) {
+        formData.append('dataset', files[0]);
+      }
+
+      const response = await fetch('/api/build-model', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error('Build model error:', result.error ?? 'Unknown error');
+      } else {
+        console.log(`Dataset uploaded — S3 key: ${result.s3Key}`);
+      }
+    } catch (err) {
+      console.error('Failed to call /api/build-model:', err);
+    }
   };
 
   const addTag = (raw: string) => {
