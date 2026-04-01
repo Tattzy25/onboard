@@ -2,9 +2,23 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import multer from "multer";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION || "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+  },
+});
+
+const S3_BUCKET = process.env.S3_BUCKET_NAME || "";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 async function startServer() {
   const app = express();
@@ -13,22 +27,61 @@ async function startServer() {
   app.use(express.json());
 
   // API routes
-  app.post("/api/build-model", async (req, res) => {
-    const { modelName, triggerWord, artistName } = req.body;
-    
+  app.post("/api/build-model", upload.single("dataset"), async (req, res) => {
+    const { modelName, triggerWord, description, coverImageUrl } = req.body;
+
     console.log(`Starting backend build process for model: ${modelName}`);
-    
-    // This is where the "MCP call" or backend-to-backend process would happen.
-    // Secrets like GEMINI_API_KEY or other credentials stay here on the server.
-    
+
     try {
-      // Simulate backend processing time
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
-      res.json({ 
-        success: true, 
-        message: "Model built successfully on the backend.",
-        modelId: `model_${Date.now()}`
+      const timestamp = Date.now();
+      const safeModelName = (modelName || "model")
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+
+      const baseKey = `datasets/${safeModelName}-${timestamp}`;
+      const datasetKey = `${baseKey}.zip`;
+      const metadataKey = `${baseKey}.json`;
+
+      // Upload ZIP dataset to S3
+      if (req.file) {
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: S3_BUCKET,
+            Key: datasetKey,
+            Body: req.file.buffer,
+            ContentType: "application/zip",
+          })
+        );
+        console.log(`Uploaded dataset ZIP to s3://${S3_BUCKET}/${datasetKey}`);
+      }
+
+      // Build and upload metadata JSON to S3
+      const metadata = {
+        modelName,
+        triggerWord,
+        description,
+        coverImageUrl,
+        datasetKey,
+        createdAt: new Date().toISOString(),
+      };
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: metadataKey,
+          Body: JSON.stringify(metadata, null, 2),
+          ContentType: "application/json",
+        })
+      );
+      console.log(`Uploaded metadata JSON to s3://${S3_BUCKET}/${metadataKey}`);
+
+      res.json({
+        success: true,
+        message: "Dataset and metadata uploaded successfully.",
+        modelId: `model_${timestamp}`,
+        datasetKey,
+        metadataKey,
       });
     } catch (error) {
       console.error("Backend build error:", error);

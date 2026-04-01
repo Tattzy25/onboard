@@ -39,13 +39,42 @@ export default function App() {
   const [tagInput, setTagInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [activePlatform, setActivePlatform] = useState('shopify');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState('');
   const [modelStatus, setModelStatus] = useState<'idle' | 'training' | 'online'>('idle');
+  const [uploadError, setUploadError] = useState('');
 
-  const handleTrain = () => {
+  const handleTrain = async () => {
+    setUploadError('');
     setModelStatus('training');
     setStep(2);
+
+    try {
+      const formData = new FormData();
+      formData.append('modelName', modelName);
+      formData.append('triggerWord', triggerWord);
+      formData.append('description', description);
+      formData.append('coverImageUrl', coverImageUrl);
+      if (files.length > 0) {
+        formData.append('dataset', files[0]);
+      }
+
+      const response = await fetch('/api/build-model', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      console.log('Upload complete:', { datasetKey: data.datasetKey, metadataKey: data.metadataKey });
+    } catch (err) {
+      console.error('Failed to upload model data:', err);
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    }
   };
 
   const addTag = (raw: string) => {
@@ -295,9 +324,23 @@ export default function App() {
                       placeholder="A short description of your style / what clients can expect…"
                     />
                   </div>
+                  <div>
+                    <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Cover Image URL</label>
+                    <input
+                      type="url"
+                      value={coverImageUrl}
+                      onChange={(e) => setCoverImageUrl(e.target.value)}
+                      style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                      className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
+                      placeholder="HTTPS://..."
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="pt-4 flex items-center justify-center">
+              <div className="pt-4 flex items-center justify-center flex-col gap-3">
+                {uploadError && (
+                  <p className="text-xs font-bold text-red-500 tracking-widest uppercase text-center">{uploadError}</p>
+                )}
                 <button
                   onClick={handleTrain}
                   className="w-full max-w-[300px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10"
