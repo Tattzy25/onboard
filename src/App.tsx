@@ -778,22 +778,17 @@ export default function App() {
               className="w-full rounded-[40px] overflow-hidden bg-white shadow-2xl p-6 lg:p-8"
             >
               <div className="w-full flex flex-col lg:flex-row items-stretch gap-8 xl:gap-10">
-                {/* LEFT - ARTIST CARD */}
-                <div className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 flex flex-col items-center animate-in slide-in-from-left-8 duration-700">
-                  <ArtistCard
-                    modelName={modelName || DEFAULT_MODEL_TITLE}
-                    artistName={artistName}
-                    description={description}
-                    tags={tags}
-                    status={modelStatus}
-                  />
-                  {/* Rating Stars Below Artist Card */}
-                  <div className="flex items-center justify-center gap-1 mt-4">
-                    {[1,2,3,4,5].map((star) => (
-                      <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                      </svg>
-                    ))}
+                {/* LEFT - ARTIST CARD - Stretches to match render area height */}
+                <div className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 self-stretch animate-in slide-in-from-left-8 duration-700">
+                  <div className="h-full">
+                    <ArtistCard
+                      modelName="Chrome Gen 1"
+                      artistName="Jane Doe"
+                      description="A bold fusion of cinematic noir photography and ethereal dreamscapes, blending stark contrasts of light and shadow with soft pastel gradients. Each piece captures fleeting moments of raw emotion suspended in time, drawing from the golden age of Hollywood glamour reimagined through a contemporary lens of digital surrealism."
+                      tags={["cinematic", "dramatic", "surreal"]}
+                      status="online"
+                      showStars={true}
+                    />
                   </div>
                 </div>
 
@@ -971,41 +966,17 @@ export default function App() {
                               <UploadCloud className="w-6 h-6" />
                               <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Upload to Gallery</span>
                             </button>
-                        {/* Edit Button - Text Button */}
-                        <button
-                          className="bg-black text-white rounded-full px-4 py-2.5 font-bold text-[10px] tracking-wider uppercase hover:bg-gray-900 active:scale-[0.98] transition-all flex items-center gap-2"
-                          onClick={async () => {
-                            try {
-                              // Fetch the generated image and convert to File
-                              const response = await fetch(generatedImage);
-                              if (response.ok) {
-                                const blob = await response.blob();
-                                const file = new File([blob], 'generated-image.png', { type: 'image/png' });
-                                setUploadedRef(file);
-                              } else {
-                                // Fallback for CORS issues
-                                const file = new File([''], `${generatedImage}`, { type: 'image/png' });
-                                setUploadedRef(file);
-                              }
-                              setGeneratedImage('');
-                            } catch {
-                              setGeneratedImage('');
-                            }
-                          }}
-                        >
-                          Edit Image
-                        </button>
                           </>
                         )}
                       </div>
-                      {/* Image / Placeholder */}
-                      <div className="flex-1 min-h-0">
+                      {/* Image / Placeholder - 1:1 Aspect Ratio */}
+                      <div className="flex-1 min-h-0 flex flex-col items-center">
                         {generatedImage ? (
-                          <div className="w-full h-full rounded-3xl overflow-hidden shadow-lg bg-gray-100">
+                          <div className="w-full aspect-square max-h-full rounded-3xl overflow-hidden shadow-lg bg-gray-100">
                             <img src={generatedImage} alt="Generated result" className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="w-full h-full rounded-3xl overflow-hidden shadow-lg bg-gray-50 flex items-center justify-center">
+                          <div className="w-full aspect-square max-h-full rounded-3xl overflow-hidden shadow-lg bg-gray-50 flex items-center justify-center">
                             {isGenerating ? (
                               <div className="flex flex-col items-center gap-4">
                                 <div className="w-20 h-20 border-4 border-black border-t-transparent rounded-full animate-spin" />
@@ -1018,6 +989,32 @@ export default function App() {
                               </div>
                             )}
                           </div>
+                        )}
+                        {/* Edit Image Button - Below Image, Center Aligned */}
+                        {generatedImage && (
+                          <button
+                            className="mt-3 bg-black text-white rounded-full px-4 py-2.5 font-bold text-[10px] tracking-wider uppercase hover:bg-gray-900 active:scale-[0.98] transition-all flex items-center gap-2"
+                            onClick={async () => {
+                              try {
+                                // Fetch the generated image and convert to File
+                                const response = await fetch(generatedImage);
+                                if (response.ok) {
+                                  const blob = await response.blob();
+                                  const file = new File([blob], 'generated-image.png', { type: 'image/png' });
+                                  setUploadedRef(file);
+                                } else {
+                                  // Fallback for CORS issues
+                                  const file = new File([''], `${generatedImage}`, { type: 'image/png' });
+                                  setUploadedRef(file);
+                                }
+                                setGeneratedImage('');
+                              } catch {
+                                setGeneratedImage('');
+                              }
+                            }}
+                          >
+                            Edit Image
+                          </button>
                         )}
                       </div>
                     </div>
@@ -1039,12 +1036,14 @@ function ArtistCard({
   tags,
   description,
   status,
+  showStars,
 }: {
   modelName: string;
   artistName: string;
   tags: string[];
   description: string;
   status: 'idle' | 'training' | 'online';
+  showStars?: boolean;
 }) {
   const statusLabel = status === 'online' ? 'Online' : status === 'training' ? 'Training' : 'Offline';
   const statusClass =
@@ -1062,6 +1061,16 @@ function ArtistCard({
   return (
     <div className="w-full max-w-[320px] rounded-[32px] bg-white shadow-2xl border border-gray-100 overflow-hidden">
       <div className="p-6 space-y-4">
+        {/* Star Rating - Above Model Label */}
+        {showStars && (
+          <div className="flex items-center justify-center gap-1 pb-2">
+            {[1,2,3,4,5].map((star) => (
+              <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+              </svg>
+            ))}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">Model</p>
