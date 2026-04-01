@@ -679,7 +679,7 @@ export default function App() {
       )}
 
       {step === 3 && (
-        <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
+        <div className="flex-1 w-full my-auto flex flex-col">
           {/* BOTTOM THREE SECTIONS */}
           <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 mb-8 px-4 animate-in fade-in duration-500">
             <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center animate-in slide-in-from-left-8 duration-700">
@@ -772,7 +772,7 @@ export default function App() {
           </div>
 
           {/* MAIN GENERATOR SECTION - NOW AT BOTTOM */}
-          <div className="w-full animate-in fade-in duration-500 px-4">
+          <div className="w-full animate-in fade-in duration-500 px-2.5 pb-5">
             <div
               style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
               className="w-full rounded-[40px] overflow-hidden bg-white shadow-2xl p-6 lg:p-8"
