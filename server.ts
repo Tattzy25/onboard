@@ -18,9 +18,7 @@ async function startServer() {
     
     console.log(`Starting backend build process for model: ${modelName}`);
     
-    // This is where the "MCP call" or backend-to-backend process would happen.
-    // Secrets like GEMINI_API_KEY or other credentials stay here on the server.
-    
+    // This is where the "MCP call" or backend-to-backend process would happen.    
     try {
       // Simulate backend processing time
       await new Promise(resolve => setTimeout(resolve, 5000));

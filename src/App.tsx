@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UploadCloud, Archive, Check, Layers, Globe, Users, Copy, Share2, Download, X } from 'lucide-react';
+import { UploadCloud, Archive, Check, Layers, Globe, Users, Copy, Share2, Download, X, Image as ImageIcon, Wand2, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { cn } from './lib/utils';
+import JSZip from 'jszip';
 
 const platformInstructions: Record<string, string[]> = {
   shopify: [
@@ -31,7 +32,19 @@ const DEFAULT_MODEL_TITLE = 'Chrome Gen 1';
 export default function App() {
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [zipValidation, setZipValidation] = useState<{ status: 'idle' | 'checking' | 'valid' | 'error'; message: string; imageCount: number }>({
+    status: 'idle',
+    message: '',
+    imageCount: 0,
+  });
+  const [imageDetails, setImageDetails] = useState<{ filename: string; width: number; height: number }[]>([]);
   const [triggerWord, setTriggerWord] = useState('');
+  const [promptText, setPromptText] = useState('');
+  const [colorMode, setColorMode] = useState('color');
+  const [styleInput, setStyleInput] = useState('');
+  const [uploadedRef, setUploadedRef] = useState<File | null>(null);
   const [modelName, setModelName] = useState('');
   const [artistName, setArtistName] = useState('');
   const [description, setDescription] = useState('');
@@ -42,10 +55,99 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState('');
   const [modelStatus, setModelStatus] = useState<'idle' | 'training' | 'online'>('idle');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const handleTrain = () => {
-    setModelStatus('training');
-    setStep(2);
+  async function uploadModel(userId: string, modelName: string, triggerWord: string, file: File) {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const arrayBuffer = e.target?.result;
+      const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer as ArrayBuffer)));
+      
+      try {
+        const response = await fetch('https://jfegwh5hs7pmvgw6nn4ri5sn5a0lpluk.lambda-url.us-east-2.on.aws/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            model_name: modelName,
+            trigger_word: triggerWord,
+            filename: file.name,
+            file_data: base64Data
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('Upload success:', result);
+          return result;
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (error) {
+        console.error('Upload failed:', error);
+        throw error;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  const handleCoverImageDrop = (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      setCoverImage(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCoverImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeCoverImage = () => {
+    setCoverImage(null);
+    setCoverImagePreview(null);
+  };
+
+  const handleTrain = async () => {
+    // Validate required fields
+    if (!files.length) {
+      alert('Please upload a dataset archive (.zip file) first.');
+      return;
+    }
+    
+    if (!modelName.trim()) {
+      alert('Please enter a model name.');
+      return;
+    }
+    
+    if (!triggerWord.trim()) {
+      alert('Please enter a trigger word.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+    
+    try {
+      // Upload the model to the backend
+      const result = await uploadModel('user_123', modelName, triggerWord, files[0]);
+      
+      console.log('Model upload successful:', result);
+      
+      // Set training status and advance to step 2
+      setModelStatus('training');
+      setStep(2);
+      
+    } catch (error) {
+      console.error('Model upload failed:', error);
+      setUploadError(error instanceof Error ? error.message : 'Upload failed');
+      alert('Failed to upload model. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const addTag = (raw: string) => {
@@ -119,13 +221,111 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const onDrop = (acceptedFiles: File[]) => {
-    setFiles(acceptedFiles);
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+
+    const file = acceptedFiles[0];
+    setFiles([file]);
+    setZipValidation({ status: 'checking', message: 'Checking contents...', imageCount: 0 });
+    setImageDetails([]);
+
+    try {
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        setZipValidation({ status: 'error', message: 'Please upload a ZIP file containing 20-30 high-resolution images.', imageCount: 0 });
+        setFiles([]);
+        return;
+      }
+
+      const zip = await JSZip.loadAsync(file);
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+      const imageFiles: JSZip.JSZipObject[] = [];
+      let nonImageFiles: string[] = [];
+      let totalFiles = 0;
+
+      zip.forEach((relativePath, zipEntry) => {
+        if (zipEntry.dir) return;
+        totalFiles++;
+        const ext = '.' + relativePath.split('.').pop()!.toLowerCase();
+        if (imageExtensions.includes(ext)) {
+          imageFiles.push(zipEntry);
+        } else {
+          nonImageFiles.push(relativePath);
+        }
+      });
+
+      if (nonImageFiles.length > 0) {
+        setZipValidation({
+          status: 'error',
+          message: 'ZIP contains non-image files. Only image files (.jpg, .png, .webp) allowed.',
+          imageCount: imageFiles.length,
+        });
+        setFiles([]);
+        return;
+      }
+
+      if (imageFiles.length < 20 || imageFiles.length > 30) {
+        setZipValidation({
+          status: 'error',
+          message: `ZIP contains ${imageFiles.length} images. Please include exactly 20-30 high-resolution images.`,
+          imageCount: imageFiles.length,
+        });
+        setFiles([]);
+        return;
+      }
+
+      // Check resolution of each image
+      const details: { filename: string; width: number; height: number }[] = [];
+      const minResolution = 1024;
+
+      for (const imgFile of imageFiles) {
+        const blob = await imgFile.async('blob');
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const url = URL.createObjectURL(blob);
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error(`Failed to load ${imgFile.name}`));
+          image.src = url;
+        });
+
+        if (img.width < minResolution || img.height < minResolution) {
+          setZipValidation({
+            status: 'error',
+            message: `"${imgFile.name}" is too small (${img.width}x${img.height}). Minimum resolution: ${minResolution}x${minResolution}px.`,
+            imageCount: imageFiles.length,
+          });
+          setFiles([]);
+          return;
+        }
+        details.push({ filename: imgFile.name, width: img.width, height: img.height });
+      }
+
+      setZipValidation({ status: 'valid', message: `${imageFiles.length} high-resolution images validated.`, imageCount: imageFiles.length });
+      setImageDetails(details);
+    } catch (err) {
+      setZipValidation({
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Failed to read ZIP file.',
+        imageCount: 0,
+      });
+      setFiles([]);
+    }
+  };
+
+  const removeZipFile = () => {
+    setFiles([]);
+    setZipValidation({ status: 'idle', message: '', imageCount: 0 });
+    setImageDetails([]);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'application/zip': ['.zip'] },
+    maxFiles: 1,
+  });
+
+  const { getRootProps: getCoverRootProps, getInputProps: getCoverInputProps, isDragActive: isCoverDragActive } = useDropzone({
+    onDrop: handleCoverImageDrop,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
     maxFiles: 1,
   });
 
@@ -171,32 +371,100 @@ export default function App() {
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">1. Upload</h2>
               </div>
               <div className="flex flex-col items-center">
+                {/* ZIPPED FOLDER UPLOAD */}
+                {files.length > 0 ? (
+                  <div
+                    style={{ borderColor: zipValidation.status === 'error' ? '#dc2626' : '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                    className="w-full max-w-[300px] min-h-[120px] rounded-3xl p-4 flex flex-col items-center justify-center bg-transparent text-center"
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <Archive className="w-7 h-7 text-gray-700" />
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="font-bold text-xs tracking-wider uppercase text-black truncate">{files[0]?.name}</div>
+                        {zipValidation.status === 'valid' ? (
+                          <div className="text-[10px] text-green-600 uppercase tracking-wider font-bold">Folder Ready ({zipValidation.imageCount} images)</div>
+                        ) : zipValidation.status === 'error' ? (
+                          <div className="flex items-center gap-1 mt-1">
+                            <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                            <div className="text-[10px] text-red-500 leading-tight">{zipValidation.message}</div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 mt-1">
+                            <div className="w-2 h-2 border border-gray-400 rounded-full animate-spin" />
+                            <div className="text-[10px] text-gray-500">Checking zip contents...</div>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeZipFile}
+                        className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    {...getRootProps()}
+                    style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                    className={cn(
+                      'w-full max-w-[300px] h-[110px] rounded-3xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center',
+                      isDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30',
+                    )}
+                  >
+                    <input {...getInputProps()} />
+                    <UploadCloud className={cn('w-8 h-8 mb-1 transition-colors', isDragActive ? 'text-black' : 'text-gray-400')} />
+                    <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">ZIPPED FOLDER</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">.ZIP (20-30 High-Res Images)</div>
+                  </div>
+                )}
+
+                {/* COVER IMAGE UPLOAD */}
                 <div
-                  {...getRootProps()}
+                  {...getCoverRootProps()}
                   style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                   className={cn(
-                    'w-full max-w-[300px] h-[240px] rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center',
-                    isDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30',
+                    'w-full max-w-[300px] h-[110px] rounded-3xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center mt-4',
+                    isCoverDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30',
                   )}
                 >
-                  <input {...getInputProps()} />
-                  {files.length > 0 ? (
+                  <input {...getCoverInputProps()} />
+                  {coverImagePreview ? (
                     <>
-                      <Archive className="w-12 h-12 mb-4 text-black" />
-                      <div className="font-bold text-sm tracking-wider uppercase mb-2 text-black truncate max-w-[200px] mx-auto">{files[0].name}</div>
-                      <div className="text-xs text-green-600 uppercase tracking-wider font-bold">Archive Ready</div>
+                      <div className="flex items-center gap-2 w-full">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                          <img src={coverImagePreview} alt="Cover preview" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-xs tracking-wider uppercase text-black truncate">{coverImage.name}</div>
+                          <div className="text-[10px] text-green-600 uppercase tracking-wider font-bold">Cover Ready</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeCoverImage();
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <>
-                      <UploadCloud className={cn('w-12 h-12 mb-4 transition-colors', isDragActive ? 'text-black' : 'text-gray-400')} />
-                      <div className="font-bold text-sm tracking-[0.2em] uppercase mb-2 text-black">Dataset Archive</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider">.ZIP (30-50 Images)</div>
+                      <ImageIcon className={cn('w-8 h-8 mb-1 transition-colors', isCoverDragActive ? 'text-black' : 'text-gray-400')} />
+                      <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">MODEL COVER</div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">.PNG, .JPG, .WEBP</div>
                     </>
                   )}
                 </div>
               </div>
 
-              <div className="w-full max-w-[300px] mx-auto pt-3">
+              <div className="w-full max-w-[300px] mx-auto pt-4">
                 <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Artist Name</label>
                 <input
                   type="text"
@@ -412,7 +680,217 @@ export default function App() {
 
       {step === 3 && (
         <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
-          <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 py-16 px-4 animate-in fade-in duration-500">
+          {/* MAIN GENERATOR SECTION - ONE UNIFIED CARD */}
+          <div className="w-full animate-in fade-in duration-500 mb-8 px-4">
+            <div
+              style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+              className="w-full max-w-7xl mx-auto rounded-[40px] overflow-hidden bg-white shadow-2xl p-6 lg:p-8"
+            >
+              <div className="w-full flex flex-col lg:flex-row items-stretch gap-8 xl:gap-10">
+                {/* LEFT - ARTIST CARD */}
+                <div className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 flex flex-col items-center animate-in slide-in-from-left-8 duration-700">
+                  <ArtistCard
+                    modelName={modelName || DEFAULT_MODEL_TITLE}
+                    artistName={artistName}
+                    description={description}
+                    tags={tags}
+                    status={modelStatus}
+                  />
+                  {/* Rating Stars Below Artist Card */}
+                  <div className="flex items-center justify-center gap-1 mt-4">
+                    {[1,2,3,4,5].map((star) => (
+                      <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+
+
+                {/* MIDDLE - TRIGGER WORD, PROMPT, UPLOAD, CREATE */}
+                <div className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 flex flex-col items-center justify-center animate-in fade-in duration-700 delay-150 fill-mode-both">
+                  <div className="w-full flex flex-col gap-5">
+                    {/* Trigger Word */}
+                    <div>
+                      <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Trigger Word</label>
+                      <div className="text-center py-2.5 px-4 rounded-xl bg-gray-50 border-2 border-gray-200">
+                        <span className="text-sm font-bold tracking-wider text-black">{triggerWord || '—'}</span>
+                      </div>
+                    </div>
+
+                    {/* Prompt Input */}
+                    <div>
+                      <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Describe Your Style</label>
+                      <textarea
+                        value={promptText}
+                        onChange={(e) => setPromptText(e.target.value)}
+                        rows={4}
+                        style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                        className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-left font-medium placeholder:text-gray-300 bg-transparent resize-none text-sm"
+                        placeholder="A cinematic portrait..."
+                      />
+                    </div>
+
+                    {/* Color Mode + Style Row */}
+                    <div className="flex items-center justify-between gap-6">
+                      {/* Color Mode */}
+                      <div className="flex flex-col items-center gap-2">
+                        <label className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">Color Mode</label>
+                        <div className="flex items-center gap-2">
+                          {['color', 'black'].map((mode) => (
+                            <label key={mode} className={cn(
+                              'flex items-center gap-1.5 cursor-pointer px-4 py-2 rounded-full transition-all',
+                              colorMode === mode ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            )}>
+                              <input
+                                type="radio"
+                                name="colorMode"
+                                value={mode}
+                                checked={colorMode === mode}
+                                onChange={() => setColorMode(mode)}
+                                className="sr-only"
+                              />
+                              <span className="text-[10px] font-bold tracking-wider uppercase">{mode === 'black' ? 'B&W' : 'Color'}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Style Input */}
+                      <div className="flex flex-col items-center gap-2">
+                        <label className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">Style</label>
+                        <input
+                          type="text"
+                          value={styleInput}
+                          onChange={(e) => setStyleInput(e.target.value)}
+                          style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                          className="w-44 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-xs font-medium placeholder:text-gray-300 bg-transparent"
+                          placeholder="e.g. cinematic"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Upload Reference */}
+                    <div>
+                      <button
+                        onClick={() => document.getElementById('upload-input')?.click()}
+                        className={cn(
+                          'w-full rounded-xl py-4 font-bold text-[10px] tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2',
+                          uploadedRef ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        )}
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        {uploadedRef ? `✓ ${uploadedRef.name.slice(0, 20)}...` : 'Upload Reference Image'}
+                      </button>
+                      <input id="upload-input" type="file" accept="image/*" className="hidden" onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setUploadedRef(e.target.files[0]);
+                        }
+                      }} />
+                    </div>
+
+                    {/* CREATE BUTTON */}
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                      className="w-full bg-black text-white rounded-xl py-4 font-bold text-[10px] tracking-[0.25em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <Wand2 className="w-5 h-5" />
+                      {isGenerating ? 'CREATING...' : 'CREATE MY IMAGE'}
+                    </button>
+                  </div>
+                </div>
+
+
+                {/* RIGHT - RENDERS */}
+                <div className="w-full lg:flex-1 flex flex-col animate-in slide-in-from-right-8 duration-700 delay-300 fill-mode-both">
+                  {generatedImage ? (
+                    <div className="w-full">
+                      {/* Action Icons Row - Top - Centered */}
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        {/* Save to Profile */}
+                        <button
+                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-red-500"
+                          title="Save to Profile"
+                          onClick={() => {}}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Save to Profile</span>
+                        </button>
+                        {/* Download */}
+                        <button
+                          onClick={() => {
+                            const a = document.createElement('a');
+                            a.href = generatedImage;
+                            a.download = 'generated-image.png';
+                            a.click();
+                          }}
+                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
+                          title="Download"
+                        >
+                          <Download className="w-6 h-6" />
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Download</span>
+                        </button>
+                        {/* Share */}
+                        <button
+                          onClick={handleShareEmbed}
+                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
+                          title="Share"
+                        >
+                          <Share2 className="w-6 h-6" />
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Share</span>
+                        </button>
+                        {/* Upload to Community Gallery */}
+                        <button
+                          onClick={() => document.getElementById('upload-input')?.click()}
+                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
+                          title="Upload to Community Gallery"
+                        >
+                          <UploadCloud className="w-6 h-6" />
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Upload to Gallery</span>
+                        </button>
+                        {/* Edit Button */}
+                        <button
+                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
+                          title="Edit Image"
+                          onClick={() => {}}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Edit</span>
+                        </button>
+                      </div>
+                      {/* Image */}
+                      <div className="w-full aspect-square rounded-3xl overflow-hidden shadow-lg bg-gray-100">
+                        <img src={generatedImage} alt="Generated result" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full">
+                      <div className="w-full aspect-square rounded-3xl overflow-hidden shadow-lg bg-gray-50 flex items-center justify-center">
+                        {isGenerating ? (
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="w-20 h-20 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                            <p className="text-sm font-bold tracking-[0.2em] uppercase text-gray-500">Creating Magic...</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-3">
+                            <Wand2 className="w-20 h-20 text-gray-200" />
+                            <p className="text-xs font-bold tracking-[0.15em] uppercase text-gray-400 text-center">Your image here</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BOTTOM THREE SECTIONS */}
+          <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 pb-16 px-4 animate-in fade-in duration-500">
             <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center animate-in slide-in-from-left-8 duration-700">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Artist Card</h2>
