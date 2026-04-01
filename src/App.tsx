@@ -798,9 +798,9 @@ export default function App() {
                 </div>
 
 
-                {/* MIDDLE - TRIGGER WORD, PROMPT, UPLOAD, CREATE */}
-                <div className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 flex flex-col items-center justify-center animate-in fade-in duration-700 delay-150 fill-mode-both">
-                  <div className="w-full flex flex-col gap-5">
+                {/* MIDDLE - TRIGGER WORD, PROMPT, UPLOAD */}
+                <div className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 flex flex-col animate-in fade-in duration-700 delay-150 fill-mode-both">
+                  <div className="w-full flex flex-col gap-4 flex-1">
                     {/* Trigger Word */}
                     <div>
                       <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Trigger Word</label>
@@ -860,26 +860,50 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Upload Reference */}
-                    <div>
+                    {/* Upload Reference - Compact like Step 1 */}
+                    {uploadedRef ? (
+                      <div
+                        className="w-full min-h-[110px] rounded-3xl p-4 flex flex-col items-center justify-center bg-transparent text-center"
+                        style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <img src={URL.createObjectURL(uploadedRef)} alt="Reference" className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="font-bold text-xs tracking-wider uppercase text-black truncate">{uploadedRef.name}</div>
+                            <div className="text-[10px] text-green-600 uppercase tracking-wider font-bold">Image Ready</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setUploadedRef(null)}
+                            className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 p-1"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
                       <button
                         onClick={() => document.getElementById('upload-input')?.click()}
-                        className={cn(
-                          'w-full rounded-xl py-4 font-bold text-[10px] tracking-[0.15em] uppercase transition-all flex items-center justify-center gap-2',
-                          uploadedRef ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        )}
+                        className="w-full h-[110px] rounded-3xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-transparent text-center hover:bg-gray-200/30"
+                        style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                       >
-                        <UploadCloud className="w-4 h-4" />
-                        {uploadedRef ? `✓ ${uploadedRef.name.slice(0, 20)}...` : 'Upload Reference Image'}
+                        <UploadCloud className="w-8 h-8 mb-1 text-gray-400" />
+                        <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">REFERENCE IMAGE</div>
+                        <div className="text-[10px] text-gray-500 uppercase tracking-wider">.PNG, .JPG, .WEBP</div>
                       </button>
-                      <input id="upload-input" type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setUploadedRef(e.target.files[0]);
-                        }
-                      }} />
-                    </div>
+                    )}
+                    <input id="upload-input" type="file" accept="image/*" className="hidden" onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setUploadedRef(e.target.files[0]);
+                      }
+                    }} />
 
-                    {/* CREATE BUTTON */}
+                    {/* Spacer to push button to bottom */}
+                    <div className="flex-1" />
+
+                    {/* CREATE BUTTON - at bottom */}
                     <button
                       onClick={handleGenerate}
                       disabled={isGenerating}
@@ -893,88 +917,111 @@ export default function App() {
 
 
                 {/* RIGHT - RENDERS */}
-                <div className="w-full lg:flex-1 flex flex-col animate-in slide-in-from-right-8 duration-700 delay-300 fill-mode-both">
-                  {generatedImage ? (
-                    <div className="w-full">
-                      {/* Action Icons Row - Top - Centered */}
-                      <div className="flex items-center justify-center gap-3 mb-4">
-                        {/* Save to Profile */}
+                <div className="w-full lg:flex-1 animate-in slide-in-from-right-8 duration-700 delay-300 fill-mode-both">
+                  <div className="w-full flex flex-col h-full">
+                    {/* Fixed height container for icons + image */}
+                    <div className="w-full flex flex-col h-[500px]">
+                      {/* Placeholder space for icons - always present */}
+                      <div className={cn(
+                        "flex items-center justify-center gap-3 transition-all duration-300",
+                        generatedImage ? "h-12 mb-2" : "h-0 mb-0 overflow-hidden"
+                      )}>
+                        {generatedImage && (
+                          <>
+                            {/* Save to Profile */}
+                            <button
+                              className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-red-500"
+                              title="Save to Profile"
+                              onClick={() => {}}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Save to Profile</span>
+                            </button>
+                            {/* Download */}
+                            <button
+                              onClick={() => {
+                                const a = document.createElement('a');
+                                a.href = generatedImage;
+                                a.download = 'generated-image.png';
+                                a.click();
+                              }}
+                              className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
+                              title="Download"
+                            >
+                              <Download className="w-6 h-6" />
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Download</span>
+                            </button>
+                            {/* Share */}
+                            <button
+                              onClick={handleShareEmbed}
+                              className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
+                              title="Share"
+                            >
+                              <Share2 className="w-6 h-6" />
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Share</span>
+                            </button>
+                            {/* Upload to Community Gallery */}
+                            <button
+                              onClick={() => document.getElementById('upload-input')?.click()}
+                              className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
+                              title="Upload to Community Gallery"
+                            >
+                              <UploadCloud className="w-6 h-6" />
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Upload to Gallery</span>
+                            </button>
+                        {/* Edit Button - Text Button */}
                         <button
-                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-red-500"
-                          title="Save to Profile"
-                          onClick={() => {}}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Save to Profile</span>
-                        </button>
-                        {/* Download */}
-                        <button
-                          onClick={() => {
-                            const a = document.createElement('a');
-                            a.href = generatedImage;
-                            a.download = 'generated-image.png';
-                            a.click();
+                          className="bg-black text-white rounded-full px-4 py-2.5 font-bold text-[10px] tracking-wider uppercase hover:bg-gray-900 active:scale-[0.98] transition-all flex items-center gap-2"
+                          onClick={async () => {
+                            try {
+                              // Fetch the generated image and convert to File
+                              const response = await fetch(generatedImage);
+                              if (response.ok) {
+                                const blob = await response.blob();
+                                const file = new File([blob], 'generated-image.png', { type: 'image/png' });
+                                setUploadedRef(file);
+                              } else {
+                                // Fallback for CORS issues
+                                const file = new File([''], `${generatedImage}`, { type: 'image/png' });
+                                setUploadedRef(file);
+                              }
+                              setGeneratedImage('');
+                            } catch {
+                              setGeneratedImage('');
+                            }
                           }}
-                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
-                          title="Download"
                         >
-                          <Download className="w-6 h-6" />
-                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Download</span>
+                          Edit Image
                         </button>
-                        {/* Share */}
-                        <button
-                          onClick={handleShareEmbed}
-                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
-                          title="Share"
-                        >
-                          <Share2 className="w-6 h-6" />
-                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Share</span>
-                        </button>
-                        {/* Upload to Community Gallery */}
-                        <button
-                          onClick={() => document.getElementById('upload-input')?.click()}
-                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
-                          title="Upload to Community Gallery"
-                        >
-                          <UploadCloud className="w-6 h-6" />
-                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Upload to Gallery</span>
-                        </button>
-                        {/* Edit Button */}
-                        <button
-                          className="group relative p-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-black"
-                          title="Edit Image"
-                          onClick={() => {}}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Edit</span>
-                        </button>
+                          </>
+                        )}
                       </div>
-                      {/* Image */}
-                      <div className="w-full aspect-square rounded-3xl overflow-hidden shadow-lg bg-gray-100">
-                        <img src={generatedImage} alt="Generated result" className="w-full h-full object-cover" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full">
-                      <div className="w-full aspect-square rounded-3xl overflow-hidden shadow-lg bg-gray-50 flex items-center justify-center">
-                        {isGenerating ? (
-                          <div className="flex flex-col items-center gap-4">
-                            <div className="w-20 h-20 border-4 border-black border-t-transparent rounded-full animate-spin" />
-                            <p className="text-sm font-bold tracking-[0.2em] uppercase text-gray-500">Creating Magic...</p>
+                      {/* Image / Placeholder */}
+                      <div className="flex-1 min-h-0">
+                        {generatedImage ? (
+                          <div className="w-full h-full rounded-3xl overflow-hidden shadow-lg bg-gray-100">
+                            <img src={generatedImage} alt="Generated result" className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="flex flex-col items-center gap-3">
-                            <Wand2 className="w-20 h-20 text-gray-200" />
-                            <p className="text-xs font-bold tracking-[0.15em] uppercase text-gray-400 text-center">Your image here</p>
+                          <div className="w-full h-full rounded-3xl overflow-hidden shadow-lg bg-gray-50 flex items-center justify-center">
+                            {isGenerating ? (
+                              <div className="flex flex-col items-center gap-4">
+                                <div className="w-20 h-20 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                                <p className="text-sm font-bold tracking-[0.2em] uppercase text-gray-500">Creating Magic...</p>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center gap-3">
+                                <Wand2 className="w-20 h-20 text-gray-200" />
+                                <p className="text-xs font-bold tracking-[0.15em] uppercase text-gray-400 text-center">Your image here</p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
