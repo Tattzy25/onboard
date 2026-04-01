@@ -680,11 +680,102 @@ export default function App() {
 
       {step === 3 && (
         <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
-          {/* MAIN GENERATOR SECTION - ONE UNIFIED CARD */}
-          <div className="w-full animate-in fade-in duration-500 mb-8 px-4">
+          {/* BOTTOM THREE SECTIONS */}
+          <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 mb-8 px-4 animate-in fade-in duration-500">
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center animate-in slide-in-from-left-8 duration-700">
+              <div className="pb-4 mb-4">
+                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Artist Card</h2>
+              </div>
+              <ArtistCard
+                modelName={modelName || DEFAULT_MODEL_TITLE}
+                artistName={artistName}
+                description={description}
+                tags={tags}
+                status={modelStatus}
+              />
+            </div>
+
+            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
+
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+              <div className="pb-4 mb-4">
+                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Embed Anywhere</h2>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <div className="w-full max-w-[300px] flex flex-col">
+                  <p className="text-xs font-medium tracking-wide text-gray-600 leading-relaxed text-center mb-4">
+                    Drop this on your website and your clients can generate concepts in your style directly on the bottom of it.
+                  </p>
+                  <div className="w-full relative group mb-4">
+                    <pre className="bg-gray-50 p-4 rounded-xl text-[10px] text-gray-800 font-mono overflow-x-auto whitespace-pre-wrap w-full">
+                      {embedCode}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4 flex items-center justify-center gap-8">
+                <button onClick={handleCopyEmbed} className="text-gray-400 hover:text-black transition-colors" title="Copy">
+                  {copied ? <Check className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6" />}
+                </button>
+                <button onClick={handleShareEmbed} className="text-gray-400 hover:text-black transition-colors" title="Share">
+                  <Share2 className="w-6 h-6" />
+                </button>
+                <button onClick={handleDownloadCode} className="text-gray-400 hover:text-black transition-colors" title="Download">
+                  <Download className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
+
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in slide-in-from-right-8 duration-700 delay-300 fill-mode-both">
+              <div className="pb-4 mb-4">
+                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Installation Guide</h2>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <div className="w-full max-w-[300px] flex flex-col gap-4">
+                  <div className="flex flex-wrap gap-2 w-full justify-center">
+                    {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
+                      <button
+                        key={platform}
+                        onClick={() => setActivePlatform(platform)}
+                        className={cn(
+                          'px-4 py-2 rounded-full font-bold text-[10px] tracking-widest uppercase transition-all',
+                          activePlatform === platform ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200',
+                        )}
+                      >
+                        {platform}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="min-h-[220px] px-4 flex items-center">
+                    <div className="space-y-2 w-full">
+                      {platformInstructions[activePlatform].map((instruction, idx) => (
+                        <p key={idx} className="text-xs font-medium text-gray-700 leading-relaxed">
+                          {instruction}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4 opacity-0 pointer-events-none">
+                <div className="h-6"></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full px-4 pb-8 flex justify-center animate-in slide-in-from-bottom-8 duration-700 delay-500">
+            <button className="bg-black text-white px-12 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 border-4 border-black">
+              GO TO MY MODEL
+            </button>
+          </div>
+
+          {/* MAIN GENERATOR SECTION - NOW AT BOTTOM */}
+          <div className="w-full animate-in fade-in duration-500 px-4">
             <div
               style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-              className="w-full max-w-7xl mx-auto rounded-[40px] overflow-hidden bg-white shadow-2xl p-6 lg:p-8"
+              className="w-full rounded-[40px] overflow-hidden bg-white shadow-2xl p-6 lg:p-8"
             >
               <div className="w-full flex flex-col lg:flex-row items-stretch gap-8 xl:gap-10">
                 {/* LEFT - ARTIST CARD */}
@@ -887,97 +978,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* BOTTOM THREE SECTIONS */}
-          <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 pb-16 px-4 animate-in fade-in duration-500">
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center animate-in slide-in-from-left-8 duration-700">
-              <div className="pb-4 mb-4">
-                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Artist Card</h2>
-              </div>
-              <ArtistCard
-                modelName={modelName || DEFAULT_MODEL_TITLE}
-                artistName={artistName}
-                description={description}
-                tags={tags}
-                status={modelStatus}
-              />
-            </div>
-
-            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
-
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
-              <div className="pb-4 mb-4">
-                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Embed Anywhere</h2>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[300px] flex flex-col">
-                  <p className="text-xs font-medium tracking-wide text-gray-600 leading-relaxed text-center mb-4">
-                    Drop this on your website and your clients can generate concepts in your style directly on the bottom of it.
-                  </p>
-                  <div className="w-full relative group mb-4">
-                    <pre className="bg-gray-50 p-4 rounded-xl text-[10px] text-gray-800 font-mono overflow-x-auto whitespace-pre-wrap w-full">
-                      {embedCode}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-              <div className="pt-4 flex items-center justify-center gap-8">
-                <button onClick={handleCopyEmbed} className="text-gray-400 hover:text-black transition-colors" title="Copy">
-                  {copied ? <Check className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6" />}
-                </button>
-                <button onClick={handleShareEmbed} className="text-gray-400 hover:text-black transition-colors" title="Share">
-                  <Share2 className="w-6 h-6" />
-                </button>
-                <button onClick={handleDownloadCode} className="text-gray-400 hover:text-black transition-colors" title="Download">
-                  <Download className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
-
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in slide-in-from-right-8 duration-700 delay-300 fill-mode-both">
-              <div className="pb-4 mb-4">
-                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Installation Guide</h2>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[300px] flex flex-col gap-4">
-                  <div className="flex flex-wrap gap-2 w-full justify-center">
-                    {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
-                      <button
-                        key={platform}
-                        onClick={() => setActivePlatform(platform)}
-                        className={cn(
-                          'px-4 py-2 rounded-full font-bold text-[10px] tracking-widest uppercase transition-all',
-                          activePlatform === platform ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200',
-                        )}
-                      >
-                        {platform}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="min-h-[220px] px-4 flex items-center">
-                    <div className="space-y-2 w-full">
-                      {platformInstructions[activePlatform].map((instruction, idx) => (
-                        <p key={idx} className="text-xs font-medium text-gray-700 leading-relaxed">
-                          {instruction}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="pt-4 opacity-0 pointer-events-none">
-                <div className="h-6"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full px-4 pt-4 pb-8 flex justify-center animate-in slide-in-from-bottom-8 duration-700 delay-500">
-            <button className="bg-black text-white px-12 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 border-4 border-black">
-              GO TO MY MODEL
-            </button>
           </div>
         </div>
       )}
