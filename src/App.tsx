@@ -4,6 +4,12 @@ import { useDropzone } from 'react-dropzone';
 import { cn } from './lib/utils';
 import JSZip from 'jszip';
 
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Label } from "../components/ui/label";
+import { Badge } from "../components/ui/badge";
+
 const platformInstructions: Record<string, string[]> = {
   shopify: [
     'Open your Shopify admin and go to Online Store > Themes.',
@@ -27,7 +33,7 @@ const platformInstructions: Record<string, string[]> = {
   ],
 };
 
-const DEFAULT_MODEL_TITLE = 'Chrome Gen 1';
+const DEFAULT_MODEL_TITLE = 'tattzy25/tattty_4_all 1';
 
 export default function App() {
   const [step, setStep] = useState(1);
@@ -394,24 +400,27 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white text-black flex flex-col pt-24 md:pt-28">
       <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow-lg border border-gray-200 mx-auto">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setStep(1)}
           className={cn('px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors', step === 1 ? 'bg-black text-white' : 'hover:bg-gray-100')}
         >
           Setup
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => setStep(2)}
           className={cn('px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors', step === 2 ? 'bg-black text-white' : 'hover:bg-gray-100')}
         >
           Training
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => setStep(3)}
           className={cn('px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors', step === 3 ? 'bg-black text-white' : 'hover:bg-gray-100')}
         >
           Completion
-        </button>
+        </Button>
       </div>
 
       {step === 1 && (
@@ -448,13 +457,13 @@ export default function App() {
                           </div>
                         )}
                       </div>
-                      <button
+                      <Button
                         type="button"
                         onClick={removeZipFile}
                         className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 p-1"
                       >
                         <X className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -504,7 +513,7 @@ export default function App() {
                           <div className="font-bold text-xs tracking-wider uppercase text-black truncate">{coverImage?.name}</div>
                           <div className="text-[10px] text-green-600 uppercase tracking-wider font-bold">Cover Ready</div>
                         </div>
-                        <button
+                        <Button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -513,7 +522,7 @@ export default function App() {
                           className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                         >
                           <X className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     </>
                   ) : (
@@ -528,19 +537,19 @@ export default function App() {
 
               <div className="w-full max-w-[300px] mx-auto pt-4">
                 <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Artist Name</label>
-                <input
+                <Input
                   type="text"
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
                   style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                  className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
+                  className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
                   placeholder="E.G. JANE DOE"
                 />
               </div>
 
               <div className="w-full max-w-[300px] mx-auto pt-3 flex flex-col gap-3">
                 <label className="block text-[10px] font-bold tracking-[0.2em] text-black uppercase text-center">Tags (up to 3)</label>
-                <input
+                <Input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
@@ -561,23 +570,23 @@ export default function App() {
                   }}
                   disabled={tags.length >= 3}
                   style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                  className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent disabled:opacity-40"
+                  className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent disabled:opacity-40"
                   placeholder={tags.length >= 3 ? 'MAX 3 TAGS' : 'TYPE A TAG + PRESS ENTER'}
                 />
 
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {tags.map((tag) => (
-                      <button
+                      <Badge
                         key={tag}
-                        type="button"
+                        variant="secondary"
                         onClick={() => removeTag(tag)}
-                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                        className="flex items-center cursor-pointer gap-2 px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                         title="Remove tag"
                       >
                         <span className="text-[10px] font-bold tracking-[0.2em] uppercase">{tag}</span>
                         <X className="w-3 h-3" />
-                      </button>
+                      </Badge>
                     ))}
                   </div>
                 )}
@@ -594,24 +603,24 @@ export default function App() {
                 <div className="w-full max-w-[300px] flex flex-col gap-6">
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Trigger Word</label>
-                    <input
+                    <Input
                       type="text"
                       value={triggerWord}
                       onChange={(e) => setTriggerWord(e.target.value)}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                      className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
+                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
                       placeholder="E.G. MYSTYLE"
                     />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">Model Name</label>
-                    <input
+                    <Input
                       type="text"
                       value={modelName}
                       onChange={(e) => setModelName(e.target.value)}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                      className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
-                      placeholder="E.G. CHROME GEN 1"
+                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
+                      placeholder="E.G. tattzy25/tattty_4_all 1"
                     />
                   </div>
                   <div>
@@ -626,25 +635,25 @@ export default function App() {
                         </span>
                       </span>
                     </div>
-                    <textarea
+                    <Textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={4}
                       maxLength={320}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                      className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-medium tracking-wide placeholder:text-gray-300 bg-transparent resize-none"
+                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-medium tracking-wide placeholder:text-gray-300 bg-transparent resize-y min-h-[100px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                       placeholder="A short description of your style / what clients can expect…"
                     />
                   </div>
                 </div>
               </div>
               <div className="pt-4 flex items-center justify-center">
-                <button
+                <Button
                   onClick={handleTrain}
                   className="w-full max-w-[300px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10"
                 >
                   CREATE MY MODEL
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -713,7 +722,7 @@ export default function App() {
           <div className="pb-8 mb-4">
             <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Training The Next Greatest Artist...</h2>
           </div>
-          
+
           <div className="w-full max-w-[600px] bg-black rounded-[32px] p-0 h-[350px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col my-auto">
             <div className="bg-[#1a1a1a] p-4 flex gap-2 w-full border-b border-gray-800">
               <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
@@ -755,7 +764,7 @@ export default function App() {
                 <div className="w-full max-w-[500px] flex flex-col gap-4">
                   <div className="flex flex-wrap gap-2 w-full justify-center">
                     {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
-                      <button
+                      <Button
                         key={platform}
                         onClick={() => setActivePlatform(platform)}
                         className={cn(
@@ -764,7 +773,7 @@ export default function App() {
                         )}
                       >
                         {platform}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                   <div className="min-h-[220px] px-4 flex items-center">
@@ -785,9 +794,9 @@ export default function App() {
           </div>
 
           <div className="w-full px-4 pb-8 flex justify-center animate-in slide-in-from-bottom-8 duration-700 delay-500">
-            <button className="bg-black text-white px-12 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 border-4 border-black">
+            <Button className="bg-black text-white px-12 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 border-4 border-black">
               GO TO MY MODEL
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -845,20 +854,21 @@ function ArtistCard({
             <p className="text-sm font-black uppercase truncate">{artistName || '—'}</p>
           </div>
 
-          <div className={cn('px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase flex-shrink-0', statusClass)}>
+          <Badge variant="secondary" className={cn('px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase flex-shrink-0', statusClass)}>
             {statusLabel}
-          </div>
+          </Badge>
         </div>
 
         {visibleTags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {visibleTags.map((tag) => (
-              <span
+              <Badge
                 key={tag}
-                className="px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase bg-gray-100 text-gray-700"
+                variant="secondary"
+                className="px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase bg-gray-100 text-gray-700"
               >
                 {tag}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
@@ -912,7 +922,7 @@ function CodeScroller({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     let currentIndex = 0;
-    
+
     // Switch to slow mode after approx 3.5 seconds
     const slowModeTimer = setTimeout(() => {
       setIsSlowMode(true);
@@ -925,7 +935,7 @@ function CodeScroller({ onComplete }: { onComplete: () => void }) {
 
         // Determine speed based on mode and progress
         let delay = 50; // default ultra fast
-        
+
         if (isSlowMode) {
           // Slow down progressively more the closer we get to the end
           const remainingLines = codeSnippets.length - currentIndex;
@@ -936,7 +946,7 @@ function CodeScroller({ onComplete }: { onComplete: () => void }) {
           }
         } else {
           // Fast mode - vary slightly
-          delay = 20 + Math.random() * 40; 
+          delay = 20 + Math.random() * 40;
         }
 
         if (currentIndex < codeSnippets.length) {
