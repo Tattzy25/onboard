@@ -57,40 +57,25 @@ export default function App() {
   const [modelStatus, setModelStatus] = useState<'idle' | 'training' | 'online'>('idle');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [ziplineUrl, setZiplineUrl] = useState<string | null>(null);
 
-  async function uploadModel(userId: string, modelName: string, triggerWord: string, file: File) {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      const arrayBuffer = e.target?.result;
-      const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer as ArrayBuffer)));
-      
-      try {
-        const response = await fetch('https://jfegwh5hs7pmvgw6nn4ri5sn5a0lpluk.lambda-url.us-east-2.on.aws/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            model_name: modelName,
-            trigger_word: triggerWord,
-            filename: file.name,
-            file_data: base64Data
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('Upload success:', result);
-          return result;
-        } else {
-          throw new Error(result.error);
-        }
-      } catch (error) {
-        console.error('Upload failed:', error);
-        throw error;
-      }
-    };
-    reader.readAsArrayBuffer(file);
+  async function uploadModel(_userId: string, _modelName: string, _triggerWord: string, file: File): Promise<{ success: boolean; url: string }> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    const response = await fetch('/api/upload-to-zipline', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    console.log('Upload success:', result);
+    return result;
   }
 
   const handleCoverImageDrop = (acceptedFiles: File[]) => {
@@ -130,12 +115,14 @@ export default function App() {
 
     setIsUploading(true);
     setUploadError(null);
+    setZiplineUrl(null);
     
     try {
-      // Upload the model to the backend
+      // Upload the zip file to Zipline via the backend
       const result = await uploadModel('user_123', modelName, triggerWord, files[0]);
       
       console.log('Model upload successful:', result);
+      setZiplineUrl(result.url);
       
       // Set training status and advance to step 2
       setModelStatus('training');
@@ -590,9 +577,17 @@ export default function App() {
               <div className="pt-4 flex items-center justify-center">
                 <button
                   onClick={handleTrain}
-                  className="w-full max-w-[300px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10"
+                  disabled={isUploading}
+                  className="w-full max-w-[300px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  CREATE MY MODEL
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      UPLOADING...
+                    </>
+                  ) : (
+                    'CREATE MY MODEL'
+                  )}
                 </button>
               </div>
             </div>
@@ -690,6 +685,37 @@ export default function App() {
               tags={tags}
               status={modelStatus}
             />
+            {ziplineUrl && (
+              <div className="mt-6 w-full max-w-[320px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 text-center mb-2">Dataset Upload</p>
+                <div
+                  style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
+                  className="w-full rounded-xl p-3 flex items-center gap-3 bg-transparent"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <Check className="w-4 h-4 text-green-600" strokeWidth={3} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold tracking-wider uppercase text-green-600">Uploaded to Zipline</p>
+                    <a
+                      href={ziplineUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-black font-bold underline underline-offset-2 truncate block hover:text-gray-600 transition-colors"
+                    >
+                      {ziplineUrl}
+                    </a>
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(ziplineUrl)}
+                    className="text-gray-400 hover:text-black transition-colors flex-shrink-0 p-1"
+                    title="Copy link"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
             <button
               onClick={handleGoToGenerator}
               className="mt-8 bg-black text-white px-8 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 animate-in slide-in-from-bottom-4 duration-500 border-4 border-black"
