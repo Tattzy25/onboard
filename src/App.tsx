@@ -752,49 +752,18 @@ export default function App() {
 
       {step === 3 && (
         <div className="flex-1 w-full my-auto flex flex-col items-center justify-center">
-          {/* BOTTOM THREE SECTIONS */}
-          <div className="w-full flex flex-col lg:flex-row items-center justify-center gap-8 xl:gap-12 mb-8 px-4 animate-in fade-in duration-500">
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center animate-in slide-in-from-left-8 duration-700">
-              <div className="pb-4 mb-4">
-                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Artist Card</h2>
-              </div>
-              <ArtistCard
-                modelName={modelName || DEFAULT_MODEL_TITLE}
-                artistName={artistName}
-                description={description}
-                tags={tags}
-                status={modelStatus}
-              />
-            </div>
-
-            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
-
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+          {/* TWO COLUMNS: EMBED & INSTALLATION */}
+          <div className="w-full flex flex-col lg:flex-row items-start justify-center gap-1 xl:gap-1 mb-8 px-4 animate-in fade-in duration-500">
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Embed Anywhere</h2>
               </div>
               <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[300px] flex flex-col">
+                <div className="w-full max-w-[500px] flex flex-col">
                   <p className="text-xs font-medium tracking-wide text-gray-600 leading-relaxed text-center mb-4">
                     Drop this on your website and your clients can generate concepts in your style directly on the bottom of it.
                   </p>
-                  <div className="w-full relative group mb-4">
-                    <pre className="bg-gray-50 p-4 rounded-xl text-[10px] text-gray-800 font-mono overflow-x-auto whitespace-pre-wrap w-full">
-                      {embedCode}
-                    </pre>
-                  </div>
                 </div>
-              </div>
-              <div className="pt-4 flex items-center justify-center gap-8">
-                <button onClick={handleCopyEmbed} className="text-gray-400 hover:text-black transition-colors" title="Copy">
-                  {copied ? <Check className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6" />}
-                </button>
-                <button onClick={handleShareEmbed} className="text-gray-400 hover:text-black transition-colors" title="Share">
-                  <Share2 className="w-6 h-6" />
-                </button>
-                <button onClick={handleDownloadCode} className="text-gray-400 hover:text-black transition-colors" title="Download">
-                  <Download className="w-6 h-6" />
-                </button>
               </div>
             </div>
 
@@ -805,7 +774,7 @@ export default function App() {
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Installation Guide</h2>
               </div>
               <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[300px] flex flex-col gap-4">
+                <div className="w-full max-w-[500px] flex flex-col gap-4">
                   <div className="flex flex-wrap gap-2 w-full justify-center">
                     {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
                       <button
