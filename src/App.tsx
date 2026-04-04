@@ -57,40 +57,80 @@ export default function App() {
   const [modelStatus, setModelStatus] = useState<'idle' | 'training' | 'online'>('idle');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>('');
 
-  async function uploadModel(userId: string, modelName: string, triggerWord: string, file: File) {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      const arrayBuffer = e.target?.result;
-      const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer as ArrayBuffer)));
-      
-      try {
-        const response = await fetch('https://jfegwh5hs7pmvgw6nn4ri5sn5a0lpluk.lambda-url.us-east-2.on.aws/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            model_name: modelName,
-            trigger_word: triggerWord,
-            filename: file.name,
-            file_data: base64Data
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('Upload success:', result);
-          return result;
-        } else {
-          throw new Error(result.error);
-        }
-      } catch (error) {
-        console.error('Upload failed:', error);
-        throw error;
+  // Detect user ID from Shopify context
+  useEffect(() => {
+    const detectUserId = () => {
+      // Check URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const userIdParam = params.get('user_id');
+      if (userIdParam) {
+        setUserId(userIdParam);
+        return;
+      }
+
+      // Check for Shopify customer ID
+      const shopifyCustomer = (window as any).Shopify?.checkout?.customer?.id;
+      if (shopifyCustomer) {
+        setUserId(shopifyCustomer);
+        return;
+      }
+
+      // Check for Shopify shop context
+      const shopifyShop = (window as any).Shopify?.shop;
+      if (shopifyShop) {
+        setUserId(shopifyShop);
+        return;
       }
     };
-    reader.readAsArrayBuffer(file);
+
+    detectUserId();
+  }, []);
+
+  async function uploadModel(
+    userId: string,
+    modelName: string,
+    triggerWord: string,
+    artistName: string,
+    description: string,
+    tagsArray: string[],
+    coverImageFile: File | null,
+    zipFile: File
+  ) {
+    const formData = new FormData();
+
+    formData.append('user_id', userId);
+    formData.append('model_name', modelName);
+    formData.append('trigger_word', triggerWord);
+    formData.append('artist_name', artistName);
+    formData.append('description', description);
+    formData.append('tags', JSON.stringify(tagsArray));
+
+    if (coverImageFile) {
+      formData.append('cover_image', coverImageFile);
+    }
+
+    formData.append('zipped_folder', zipFile);
+
+    try {
+      const response = await fetch('/api/build-model', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('Upload success:', result);
+        return result;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw error;
+    }
   }
 
   const handleCoverImageDrop = (acceptedFiles: File[]) => {
@@ -132,8 +172,17 @@ export default function App() {
     setUploadError(null);
     
     try {
-      // Upload the model to the backend
-      const result = await uploadModel('user_123', modelName, triggerWord, files[0]);
+      // Upload the model to the backend with all required data
+      const result = await uploadModel(
+        userId,
+        modelName,
+        triggerWord,
+        artistName,
+        description,
+        tags,
+        coverImage,
+        files[0]
+      );
       
       console.log('Model upload successful:', result);
       
@@ -142,9 +191,10 @@ export default function App() {
       setStep(2);
       
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
       console.error('Model upload failed:', error);
-      setUploadError(error instanceof Error ? error.message : 'Upload failed');
-      alert('Failed to upload model. Please try again.');
+      setUploadError(errorMsg);
+      alert(`Upload failed: ${errorMsg}`);
     } finally {
       setIsUploading(false);
     }
@@ -155,7 +205,7 @@ export default function App() {
     if (!value) return;
 
     setTags((prev) => {
-      if (prev.length >= 4) return prev;
+      if (prev.length >= 3) return prev;
       if (prev.some((t) => t.toLowerCase() === value.toLowerCase())) return prev;
       return [...prev, value];
     });
@@ -450,7 +500,7 @@ export default function App() {
                           <img src={coverImagePreview} alt="Cover preview" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-xs tracking-wider uppercase text-black truncate">{coverImage.name}</div>
+                          <div className="font-bold text-xs tracking-wider uppercase text-black truncate">{coverImage?.name}</div>
                           <div className="text-[10px] text-green-600 uppercase tracking-wider font-bold">Cover Ready</div>
                         </div>
                         <button
@@ -488,7 +538,7 @@ export default function App() {
               </div>
 
               <div className="w-full max-w-[300px] mx-auto pt-3 flex flex-col gap-3">
-                <label className="block text-[10px] font-bold tracking-[0.2em] text-black uppercase text-center">Tags (up to 4)</label>
+                <label className="block text-[10px] font-bold tracking-[0.2em] text-black uppercase text-center">Tags (up to 3)</label>
                 <input
                   type="text"
                   value={tagInput}
@@ -508,10 +558,10 @@ export default function App() {
                     addTag(next);
                     setTagInput('');
                   }}
-                  disabled={tags.length >= 4}
+                  disabled={tags.length >= 3}
                   style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
                   className="w-full p-3 rounded-xl focus:ring-2 focus:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent disabled:opacity-40"
-                  placeholder={tags.length >= 4 ? 'MAX 4 TAGS' : 'TYPE A TAG + PRESS ENTER'}
+                  placeholder={tags.length >= 3 ? 'MAX 3 TAGS' : 'TYPE A TAG + PRESS ENTER'}
                 />
 
                 {tags.length > 0 && (
