@@ -157,12 +157,12 @@ export default function App() {
       alert('Please upload a dataset archive (.zip file) first.');
       return;
     }
-    
+
     if (!modelName.trim()) {
       alert('Please enter a model name.');
       return;
     }
-    
+
     if (!triggerWord.trim()) {
       alert('Please enter a trigger word.');
       return;
@@ -170,7 +170,7 @@ export default function App() {
 
     setIsUploading(true);
     setUploadError(null);
-    
+
     try {
       // Upload the model to the backend with all required data
       const result = await uploadModel(
@@ -183,13 +183,13 @@ export default function App() {
         coverImage,
         files[0]
       );
-      
+
       console.log('Model upload successful:', result);
-      
+
       // Set training status and advance to step 2
       setModelStatus('training');
       setStep(2);
-      
+
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
       console.error('Model upload failed:', error);
@@ -217,6 +217,7 @@ export default function App() {
 
   const handleTrainingComplete = () => {
     setModelStatus('online');
+    setStep(3);
   };
 
   const handleGoToGenerator = () => {
@@ -471,7 +472,7 @@ export default function App() {
                       <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">ZIPPED FOLDER</div>
                       <span className="relative inline-block cursor-help group">
                         <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                         </svg>
                         <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2.5 w-80 text-[11px] font-bold text-white bg-gray-900 rounded-lg whitespace-normal opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed shadow-lg">
                           <span className="block text-center">Minimum 1024px x 1024px resolution. 20-30 images of your tattoo style. For best results, keep your style consistent.</span>
@@ -618,7 +619,7 @@ export default function App() {
                       <label className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">Description</label>
                       <span className="relative inline-block cursor-help group">
                         <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                         </svg>
                         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[9px] font-bold text-white bg-black rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           320 characters max
@@ -672,7 +673,7 @@ export default function App() {
                       <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
                         <Globe className="w-3 h-3" strokeWidth={3} />
                       </div>
-                      <span className="text-xs font-bold tracking-widest uppercase">Embed On Site</span>
+                      <span className="text-xs font-bold tracking-widest uppercase">Copy Paste ANYWHERE</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center flex-shrink-0">
@@ -708,18 +709,12 @@ export default function App() {
       )}
 
       {step === 2 && (
-        <div className="flex-1 w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 max-w-7xl mx-auto my-auto py-16 px-4 animate-in fade-in duration-500">
-          <div className="w-full lg:flex-1 lg:w-0 flex flex-col justify-center space-y-8">
-            <StatusItem text="Uploading Dataset..." delay={0} />
-            <StatusItem text="Analyzing Style Patterns..." delay={1500} />
-            <StatusItem text="Compiling Neural Network..." delay={3000} />
-            <StatusItem text="Training Model Weights..." delay={4500} />
-            <StatusItem text="Finalizing Artist Card..." delay={6500} />
+        <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
+          <div className="pb-8 mb-4">
+            <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Training The Next Greatest Artist...</h2>
           </div>
-
-          <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
-
-          <div className="w-full lg:flex-1 lg:w-0 bg-black rounded-[32px] p-0 h-[350px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col my-auto">
+          
+          <div className="w-full max-w-[600px] bg-black rounded-[32px] p-0 h-[350px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col my-auto">
             <div className="bg-[#1a1a1a] p-4 flex gap-2 w-full border-b border-gray-800">
               <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
               <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
@@ -730,23 +725,6 @@ export default function App() {
             </div>
           </div>
 
-          <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
-
-          <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center">
-            <ArtistCard
-              modelName={modelName || DEFAULT_MODEL_TITLE}
-              artistName={artistName}
-              description={description}
-              tags={tags}
-              status={modelStatus}
-            />
-            <button
-              onClick={handleGoToGenerator}
-              className="mt-8 bg-black text-white px-8 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 animate-in slide-in-from-bottom-4 duration-500 border-4 border-black"
-            >
-              CHECK OUT MY MODEL
-            </button>
-          </div>
         </div>
       )}
 
@@ -852,9 +830,9 @@ function ArtistCard({
         {/* Star Rating - Above Model Label */}
         {showStars && (
           <div className="flex items-center justify-center gap-1 pb-2">
-            {[1,2,3,4,5].map((star) => (
+            {[1, 2, 3, 4, 5].map((star) => (
               <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
               </svg>
             ))}
           </div>
@@ -896,13 +874,101 @@ function ArtistCard({
   );
 }
 
-function CodeScroller({ onComplete }: { onComplete: () => void }) {
-  useEffect(() => {
-    const timer = setTimeout(onComplete, 8000);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+// Training terminal simulation
+const codeSnippets = [
+  "> INITIALIZING TATTOO STYLE ENGINE...",
+  "> LOADING IMAGE DATASET BLOCKS...",
+  "> ALLOCATING VRAM TENSORS...",
+  "import torch",
+  "import torch.nn as nn",
+  "from diffusers import StableDiffusionPipeline",
+  "model = StableDiffusionPipeline.from_pretrained('base_model')",
+  "model.to('cuda')",
+  "> EXTRACTING STYLE FEATURES...",
+  "Dataset size: 28 images. Resolution: 1024x1024",
+  "> SETTING UP AdamW OPTIMIZER (lr=1e-5)...",
+  "STARTING TRAINING LOOP...",
+];
 
-  return <div className="text-green-400 font-mono text-xs">Training model...</div>;
+// Add generic loss lines
+for (let i = 1; i <= 20; i++) {
+  codeSnippets.push(`Epoch [${i}/20] | Loss: ${(Math.random() * 0.1 + 0.05).toFixed(4)} | Step: ${i * 40}`);
+}
+
+codeSnippets.push(
+  "> WEIGHTS CONVERGED SUCCESSFULLY.",
+  "> SAVING LoRA CHECKPOINTS...",
+  "model.save_pretrained('./models/artist_style')",
+  "> UPLOADING TO EDGE NETWORK...",
+  "> OPTIMIZING WEBGL EMBED RENDERER...",
+  "> DEPLOYMENT READY.",
+  "status = 'ONLINE'"
+);
+
+function CodeScroller({ onComplete }: { onComplete: () => void }) {
+  const [lines, setLines] = useState<string[]>([]);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [isSlowMode, setIsSlowMode] = useState(false);
+
+  useEffect(() => {
+    let currentIndex = 0;
+    
+    // Switch to slow mode after approx 3.5 seconds
+    const slowModeTimer = setTimeout(() => {
+      setIsSlowMode(true);
+    }, 3500);
+
+    const renderNextLine = () => {
+      if (currentIndex < codeSnippets.length) {
+        setLines(prev => [...prev, codeSnippets[currentIndex]]);
+        currentIndex++;
+
+        // Determine speed based on mode and progress
+        let delay = 50; // default ultra fast
+        
+        if (isSlowMode) {
+          // Slow down progressively more the closer we get to the end
+          const remainingLines = codeSnippets.length - currentIndex;
+          if (remainingLines < 5) {
+            delay = 800 + Math.random() * 500; // last few lines are very slow
+          } else {
+            delay = 300 + Math.random() * 400; // somewhat slow
+          }
+        } else {
+          // Fast mode - vary slightly
+          delay = 20 + Math.random() * 40; 
+        }
+
+        if (currentIndex < codeSnippets.length) {
+          setTimeout(renderNextLine, delay);
+        } else {
+          setTimeout(onComplete, 1000);
+        }
+      }
+    };
+
+    const initialTimer = setTimeout(renderNextLine, 100);
+
+    return () => {
+      clearTimeout(slowModeTimer);
+      clearTimeout(initialTimer);
+    };
+  }, [isSlowMode, onComplete]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [lines]);
+
+  return (
+    <div ref={scrollRef} className="h-full w-full overflow-y-auto font-mono text-xs sm:text-sm text-[#00ff00] leading-relaxed pb-4 custom-scrollbar pr-2">
+      {lines.map((line, i) => (
+        <div key={i} className="mb-0.5 opacity-90 break-all">{line}</div>
+      ))}
+      <div className="inline-block w-2 h-[1em] bg-[#00ff00] animate-pulse ml-1 align-middle" />
+    </div>
+  );
 }
 
 function StatusItem({ text, delay }: { text: string; delay: number }) {
