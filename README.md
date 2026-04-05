@@ -1,0 +1,1 @@
+ n,qb s,qb s,bnq ,
