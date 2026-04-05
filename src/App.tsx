@@ -225,6 +225,7 @@ export default function App() {
       );
 
       console.log('Model upload successful:', result);
+      systemToast.success('Upload successful! Starting training...');
 
       // Extract version ID and Gen ID from API response
       const vid = result.data?.version_id || '';
@@ -733,9 +734,17 @@ export default function App() {
               <div className="pt-4 flex items-center justify-center">
                 <Button
                   onClick={handleTrain}
-                  className="w-full max-w-[300px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10"
+                  disabled={isUploading}
+                  className="w-full max-w-[300px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  CREATE MY MODEL
+                  {isUploading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      UPLOADING...
+                    </span>
+                  ) : (
+                    'CREATE MY MODEL'
+                  )}
                 </Button>
               </div>
             </div>
