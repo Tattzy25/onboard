@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
+import { put } from '@vercel/blob';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,40 +29,75 @@ async function startServer() {
     const coverImageFile = files.cover_image?.[0];
     const zippedFolderFile = files.zipped_folder?.[0];
 
-    const formData = new FormData();
-    formData.append('user_id', 'owner123');
-    formData.append('model_name', model_name);
-    formData.append('trigger_word', trigger_word);
-    formData.append('artist_name', artist_name);
-    formData.append('description', description);
-    formData.append('tags', tags);
-    
-    if (coverImageFile) {
-      formData.append('cover_image', new Blob([new Uint8Array(coverImageFile.buffer)], { type: coverImageFile.mimetype }), coverImageFile.originalname);
-    }
-    
-    if (zippedFolderFile) {
-      formData.append('zipped_folder', new Blob([new Uint8Array(zippedFolderFile.buffer)], { type: zippedFolderFile.mimetype }), zippedFolderFile.originalname);
-    }
+    let zipUrl = null;
+    let coverUrl = null;
 
-    // Upload to Vercel Blob (TODO: add @vercel/blob, VERCEL_BLOB_TOKEN env)
-    // const { url: zipUrl } = await put('models/' + model_name + '.zip', zippedFolderFile.buffer, { access: 'public', handleUploadUrl: 'https://upload.vercel.blob.c...'});
-    // const { url: coverUrl } = coverImageFile ? await put('covers/' + coverImageFile.originalname, coverImageFile.buffer, { access: 'public' }) : null;
-
-    res.json({ 
-      success: true, 
-      message: "Files uploaded successfully",
-      data: {
-        zip_url: 'https://blob.vercel.storage/placeholder.zip', // TODO replace with real URL
-        cover_url: 'https://blob.vercel.storage/placeholder.jpg', // TODO
-        model_name,
-        trigger_word,
-        artist_name,
-        description,
-        tags: JSON.parse(tags || '[]'),
-        user_id: 'owner123'
+    try {
+      if (zippedFolderFile) {
+        const { url: uploadedZipUrl } = await put(`models/${model_name || 'model'}-${Date.now()}.zip`, Buffer.from(zippedFolderFile.buffer), {
+          access: 'public',
+          addRandomSuffix: true
+        });
+        zipUrl = uploadedZipUrl;
+        console.log('ZIP uploaded:', zipUrl);
       }
-    });
+
+      if (coverImageFile) {
+        const { url: uploadedCoverUrl } = await put(`covers/${Date.now()}-${coverImageFile.originalname}`, Buffer.from(coverImageFile.buffer), {
+          access: 'public',
+          addRandomSuffix: true
+        });
+        coverUrl = uploadedCoverUrl;
+        console.log('Cover uploaded:', coverUrl);
+      }
+
+      // Send to Dify or webhook
+      const difyData = {
+        name: model_name,
+        description: description,
+        cover_image_url: coverUrl,
+        input_images: zipUrl,
+        trigger_word: trigger_word,
+        artist_name: artist_name,
+        tags: JSON.parse(tags || '[]')
+      };
+
+      // Option 1: Dify workflow
+      const workflowResponse = await fetch('https://api.dify.ai/v1/workflows/run', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.DIFY_API_KEY || ''}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: difyData,
+          response_mode: "blocking",
+          user: "user123"
+        })
+      });
+
+      // Option 2: Webhook
+      // await fetch('https://trigger.ai-plugin.io/triggers/webhook-debug/DroVv7RwOe5NYFan9yyOwCcn', {
+      //   method: 'POST',
+      //   headers: {'Content-Type': 'application/json'},
+      //   body: JSON.stringify(difyData)
+      // });
+
+      const workflowResult = await workflowResponse.json();
+
+      res.json({ 
+        success: true, 
+        message: "Files processed and workflow triggered",
+        data: {
+          blob_urls: { zipUrl, coverUrl },
+          workflow: workflowResult
+        }
+      });
+    } catch (error) {
+      console.error('Processing failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message || 'Unknown error' });
+
+    }
   });
 
   if (process.env.NODE_ENV !== "production") {
