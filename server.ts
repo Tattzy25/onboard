@@ -13,70 +13,53 @@ async function startServer() {
 
   app.use(express.json());
   
-  // Configure multer for file uploads
   const upload = multer({ storage: multer.memoryStorage() });
 
-  // API routes
   app.post("/api/build-model", upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'zipped_folder', maxCount: 1 }
   ]), async (req, res) => {
-    try {
-      const { model_name, trigger_word, artist_name, description, tags } = req.body;
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-      
-      const coverImageFile = files?.cover_image?.[0];
-      const zippedFolderFile = files?.zipped_folder?.[0];
+    console.log("🔥 /api/build-model HIT!");
+    
+    const { model_name, trigger_word, artist_name, description, tags } = req.body;
+    console.log("Body:", { model_name, trigger_word, artist_name, description, tags });
+    
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const coverImageFile = files.cover_image?.[0];
+    const zippedFolderFile = files.zipped_folder?.[0];
 
-      // Build FormData to send to Dify - pass everything as-is
-      const formData = new FormData();
-      formData.append('user_id', 'owner123');
-      formData.append('model_name', model_name || '');
-      formData.append('trigger_word', trigger_word || '');
-      formData.append('artist_name', artist_name || '');
-      formData.append('description', description || '');
-      formData.append('tags', tags || '');
-      
-      
-      // Append files
-      if (coverImageFile) {
-        formData.append('cover_image', new Blob([new Uint8Array(coverImageFile.buffer)], { type: coverImageFile.mimetype }), coverImageFile.originalname);
-      }
-      
-      if (zippedFolderFile) {
-        formData.append('zipped_folder', new Blob([new Uint8Array(zippedFolderFile.buffer)], { type: zippedFolderFile.mimetype }), zippedFolderFile.originalname);
-      }
-
-      // Forward to Dify endpoint
-      const difyResponse = await fetch('https://dify-bridge-production.up.railway.app/train', {
-        method: 'POST',
-        body: formData
-      });
-
-      const difyResult = await difyResponse.json();
-
-      if (difyResponse.ok) {
-        res.json({ 
-          success: true, 
-          message: "Model training initiated successfully",
-          data: difyResult
-        });
-      } else {
-        res.status(difyResponse.status).json({ 
-          success: false, 
-          error: difyResult.error || "Failed to initiate training on Dify" 
-        });
-      }
-    } catch (error) {
-      console.error("Training request error:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: error instanceof Error ? error.message : "Failed to process training request" 
-      });
+    const formData = new FormData();
+    formData.append('user_id', 'owner123');
+    formData.append('model_name', model_name);
+    formData.append('trigger_word', trigger_word);
+    formData.append('artist_name', artist_name);
+    formData.append('description', description);
+    formData.append('tags', tags);
+    
+    if (coverImageFile) {
+      formData.append('cover_image', new Blob([new Uint8Array(coverImageFile.buffer)], { type: coverImageFile.mimetype }), coverImageFile.originalname);
     }
+    
+    if (zippedFolderFile) {
+      formData.append('zipped_folder', new Blob([new Uint8Array(zippedFolderFile.buffer)], { type: zippedFolderFile.mimetype }), zippedFolderFile.originalname);
+    }
+
+    const difyResponse = await fetch('https://dify-bridge-production.up.railway.app/train', {
+      method: 'POST',
+      body: formData
+    });
+
+    console.log("✅ Got response from Dify bridge, status:", difyResponse.status);
+    const difyResult = await difyResponse.json();
+    console.log("✅ Dify Result:", difyResult);
+
+    res.json({ 
+      success: true, 
+      message: "Model training initiated successfully",
+      data: difyResult
+    });
   });
 
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

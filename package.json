@@ -64,6 +64,7 @@
     "prettier": "^3.8.1",
     "shadcn": "^4.1.2",
     "tailwindcss": "^4.1.14",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
