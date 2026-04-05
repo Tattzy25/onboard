@@ -3,6 +3,8 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
+import FormData from "form-data";
+import { Readable } from "stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,21 +38,32 @@ async function startServer() {
       formData.append('artist_name', artist_name || '');
       formData.append('description', description || '');
       formData.append('tags', tags || '');
-      
-      
-      // Append files
+
+      // Append files as readable streams so form-data sets the correct
+      // Content-Type: multipart/form-data header with boundary automatically
       if (coverImageFile) {
-        formData.append('cover_image', new Blob([new Uint8Array(coverImageFile.buffer)], { type: coverImageFile.mimetype }), coverImageFile.originalname);
+        const stream = Readable.from(coverImageFile.buffer);
+        formData.append('cover_image', stream, {
+          filename: coverImageFile.originalname,
+          contentType: coverImageFile.mimetype,
+          knownLength: coverImageFile.buffer.length,
+        });
       }
-      
+
       if (zippedFolderFile) {
-        formData.append('zipped_folder', new Blob([new Uint8Array(zippedFolderFile.buffer)], { type: zippedFolderFile.mimetype }), zippedFolderFile.originalname);
+        const stream = Readable.from(zippedFolderFile.buffer);
+        formData.append('zipped_folder', stream, {
+          filename: zippedFolderFile.originalname,
+          contentType: zippedFolderFile.mimetype,
+          knownLength: zippedFolderFile.buffer.length,
+        });
       }
 
       // Forward to Dify endpoint
       const difyResponse = await fetch('http://dify-bridge.railway.internal:8080/train', {
         method: 'POST',
-        body: formData
+        body: formData as unknown as BodyInit,
+        headers: formData.getHeaders(),
       });
 
       const difyResult = await difyResponse.json();
