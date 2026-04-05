@@ -147,7 +147,7 @@ export default function App() {
     formData.append('zipped_folder', zipFile);
 
     try {
-      const response = await fetch('https://dify-bridge.railway.internal/train', {
+      const response = await fetch('/api/build-model', {
         method: 'POST',
         body: formData,
       });

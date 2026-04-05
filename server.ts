@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
   
@@ -40,15 +40,15 @@ async function startServer() {
       
       // Append files
       if (coverImageFile) {
-        formData.append('cover_image', new Blob([coverImageFile.buffer], { type: coverImageFile.mimetype }), coverImageFile.originalname);
+        formData.append('cover_image', new Blob([new Uint8Array(coverImageFile.buffer)], { type: coverImageFile.mimetype }), coverImageFile.originalname);
       }
       
       if (zippedFolderFile) {
-        formData.append('zipped_folder', new Blob([zippedFolderFile.buffer], { type: zippedFolderFile.mimetype }), zippedFolderFile.originalname);
+        formData.append('zipped_folder', new Blob([new Uint8Array(zippedFolderFile.buffer)], { type: zippedFolderFile.mimetype }), zippedFolderFile.originalname);
       }
 
       // Forward to Dify endpoint
-      const difyResponse = await fetch('https://dify-bridge.railway.internal/train', {
+      const difyResponse = await fetch('https://dify-bridge-production.up.railway.app/train', {
         method: 'POST',
         body: formData
       });
