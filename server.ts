@@ -48,7 +48,7 @@ async function startServer() {
       }
 
       // Forward to Dify endpoint
-      const difyResponse = await fetch('https://dify-bridge-production.up.railway.app/train', {
+      const difyResponse = await fetch('http://dify-bridge.railway.internal:8080/train', {
         method: 'POST',
         body: formData
       });
