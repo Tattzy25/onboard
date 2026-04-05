@@ -17,34 +17,26 @@ import { Badge } from "../components/ui/badge";
 const platformInstructions: Record<string, string[]> = {
   shopify: [
     'Where: Online Store > Themes > Customize > (open theme) > Edit code OR Theme settings > Custom HTML section.',
-    'In Shopify admin, go to Online Store > Themes > Customize.',
-    'Open the page/section where you want the iframe. Click the block that allows HTML or select “Custom HTML” (or use Edit code → relevant template if no HTML block).',
-    'Paste this snippet where you want it:',
+    'Step 1: In Shopify admin, go to Online Store > Themes > Customize.',
+    'Step 2: Open the page/section where you want the iframe. Click the block that allows HTML or select “Custom HTML” (or use Edit code → relevant template if no HTML block).',
+    'Step 3: Paste this snippet where you want it:',
     '<iframe src="https://embed.tattty.com?{{version=}}&{{gen_id}}=" />',
-    'Save and preview. If it’s blocked, use Edit code and paste into the template file inside the section you want.',
+    'Step 4: Save and preview. If it’s blocked, use Edit code and paste into the template file inside the section you want.',
   ],
   squarespace: [
-    'Where: Pages > Edit Page > Add Block > Code Block. (Need a plan that supports Code Block.)',
-    'Edit the page and click the + to add a block.',
-    'Choose “Code” block.',
-    'Paste the iframe code above.',
-    '<iframe src="https://embed.tattty.com?version=VERSION_ID&gen_id=GEN_ID=" />',
-    'Click Apply → Save page → Preview.',
+    'Edit the page where you want the generator to appear.',
+    'Add a Code Block to the section.',
+    'Paste the embed code, apply changes, and publish the page.',
   ],
   wix: [
-    'Where: Editor > Add (+) > Embed > Embed a Widget > HTML iframe.',
-    'Open Wix Editor and the page you want.',
-    'Add > Embed > Embed a Widget > “HTML iframe” or “Custom Embeds” → Enter Code.',
-    'Paste the iframe snippet.',
-    '<iframe src="https://embed.tattty.com?version=VERSION_ID&gen_id=GEN_ID=" />',
-    'Resize the frame on page, Save & Publish.',
+    'Open the Wix Editor and choose the page for your generator.',
+    'Add an Embed Code element from the Add panel.',
+    'Paste the iframe code and resize the element to fit your layout.',
   ],
   wordpress: [
-    'Where: Page/Post editor → Add block → Custom HTML (or use theme editor if needed). Business plan required on wordpress.com for third‑party iframes.',
-    'Edit the page/post. Click + and choose “Custom HTML.”',
-    'Paste the iframe snippet.',
-    '<iframe src="https://embed.tattty.com?version=VERSION_ID&gen_id=GEN_ID=" />',
-    'Preview and Publish.',
+    'Open the page or post in the WordPress editor.',
+    'Insert a Custom HTML block where the generator should appear.',
+    'Paste the embed code and update or publish the page.',
   ],
 };
 
@@ -901,36 +893,25 @@ export default function App() {
                         </TabsTrigger>
                       ))}
                     </TabsList>
-                    <div className="min-h-[160px] px-4 flex items-start mt-2">
+                    <div className="min-h-[220px] px-4 flex items-center mt-4">
                       {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
                         <TabsContent key={platform} value={platform} className="w-full m-0 border-none p-0 focus-visible:ring-0">
-                          <div className="space-y-0.5 w-full">
+                          <div className="space-y-2 w-full">
                             {platformInstructions[platform].map((instruction, idx) => {
                               const displayInstruction = instruction
                                 .replace('{{version=}}', `version=${versionId || 'VERSION_ID'}`)
-                                .replace('{{gen_id}}', `gen_id=${embedRandom || 'GEN_ID'}`)
-                                .replace('VERSION_ID', versionId || 'VERSION_ID')
-                                .replace('GEN_ID', embedRandom || 'GEN_ID');
+                                .replace('{{gen_id}}', `gen_id=${embedRandom || 'GEN_ID'}`);
                               
-                              const isIframe = instruction.startsWith('<iframe');
-                              const isWhere = instruction.startsWith('Where:');
-
                               return (
-                                <div 
+                                <p 
                                   key={idx} 
                                   className={cn(
-                                    "font-['Roboto',sans-serif] text-[14px] md:text-[16px] font-medium text-gray-700 leading-tight flex gap-2",
-                                    isIframe && "font-mono bg-gray-100 p-1.5 rounded mt-0.5 break-all border border-gray-200 text-[12px] md:text-[13px] tracking-tight leading-none",
-                                    !isIframe && !isWhere && "pl-4 relative"
+                                    "font-['Roboto',sans-serif] text-[14px] md:text-[16px] font-medium text-gray-700 leading-relaxed",
+                                    instruction.startsWith('<iframe') && "font-mono bg-gray-100 p-2 rounded mt-1 break-all border border-gray-200"
                                   )}
                                 >
-                                  {!isIframe && !isWhere && (
-                                    <span className="absolute left-0 top-0">•</span>
-                                  )}
-                                  <span className="flex-1">
-                                    {isWhere ? <strong>{displayInstruction}</strong> : displayInstruction}
-                                  </span>
-                                </div>
+                                  {displayInstruction}
+                                </p>
                               );
                             })}
                           </div>
