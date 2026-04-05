@@ -7,6 +7,7 @@ import JSZip from 'jszip';
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
+import { SystemAlert } from "../components/ui/alert";
 import { CopyIcon } from "../components/ui/copy";
 import { DownloadIcon } from "../components/ui/download";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
@@ -45,6 +46,19 @@ const platformInstructions: Record<string, string[]> = {
 };
 
 const DEFAULT_MODEL_TITLE = 'tattzy25/tattty_4_all 1';
+
+const systemToast = {
+  error: (msg: string) => {
+    toast.custom((t) => (
+      <SystemAlert id={t.toString()} variant="error" title="Error" description={msg} isVisible={true} onClose={() => toast.dismiss(t)} />
+    ));
+  },
+  success: (msg: string) => {
+    toast.custom((t) => (
+      <SystemAlert id={t.toString()} variant="success" title="Success" description={msg} isVisible={true} onClose={() => toast.dismiss(t)} />
+    ));
+  }
+};
 
 export default function App() {
   const [step, setStep] = useState(1);
@@ -148,7 +162,7 @@ export default function App() {
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Network error or server unreachable.';
-      toast.error(`Upload failed: ${errorMsg}`);
+      systemToast.error(`Upload failed: ${errorMsg}`);
       console.error('Upload failed:', error);
       throw error;
     }
@@ -175,22 +189,22 @@ export default function App() {
   const handleTrain = async () => {
     // Validate required fields
     if (!files.length) {
-      toast.error('Please upload a dataset archive (.zip file) first.');
+      systemToast.error('Please upload a dataset archive (.zip file) first.');
       return;
     }
 
     if (!modelName.trim() && !triggerWord.trim()) {
-      toast.error('Please enter a model name and trigger word.');
+      systemToast.error('Please enter a model name and trigger word.');
       return;
     }
 
     if (!modelName.trim()) {
-      toast.error('Please enter a model name.');
+      systemToast.error('Please enter a model name.');
       return;
     }
 
     if (!triggerWord.trim()) {
-      toast.error('Please enter a trigger word.');
+      systemToast.error('Please enter a trigger word.');
       return;
     }
 
@@ -285,16 +299,16 @@ export default function App() {
         });
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
-          toast.error('Failed to share.');
+          systemToast.error('Failed to share.');
         }
       }
     } else {
       // Fallback: Copy to clipboard if Web Share API is not available
       try {
         await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
-        toast.success('Share message copied to clipboard!');
+        systemToast.success('Share message copied to clipboard!');
       } catch (err) {
-        toast.error('Failed to copy share message.');
+        systemToast.error('Failed to copy share message.');
       }
     }
   };
@@ -328,7 +342,7 @@ export default function App() {
     try {
       if (!file.name.toLowerCase().endsWith('.zip')) {
         const errorMsg = 'Invalid file format. Please upload a .zip folder.';
-        toast.error(errorMsg);
+        systemToast.error(errorMsg);
         setZipValidation({ status: 'error', message: errorMsg, imageCount: 0 });
         setFiles([]);
         return;
@@ -350,7 +364,7 @@ export default function App() {
       });
 
       if (rejectedFiles.length > 0) {
-        toast.error(`ZIP contains ${rejectedFiles.length} invalid files (videos/docs). Please include only images (.jpg, .png, .webp).`);
+        systemToast.error(`ZIP contains ${rejectedFiles.length} invalid files (videos/docs). Please include only images (.jpg, .png, .webp).`);
         setZipValidation({
           status: 'error',
           message: 'Only image files allowed.',
@@ -361,7 +375,7 @@ export default function App() {
       }
 
       if (imageFiles.length > 40) {
-        toast.error(`ZIP contains too many images (${imageFiles.length}). Maximum 40 allowed.`);
+        systemToast.error(`ZIP contains too many images (${imageFiles.length}). Maximum 40 allowed.`);
         setZipValidation({
           status: 'error',
           message: 'Maximum 40 images allowed.',
@@ -372,7 +386,7 @@ export default function App() {
       }
 
       if (imageFiles.length < 20) {
-        toast.error(`ZIP contains too few images (${imageFiles.length}). Please include at least 20 images.`);
+        systemToast.error(`ZIP contains too few images (${imageFiles.length}). Please include at least 20 images.`);
         setZipValidation({
           status: 'error',
           message: 'Include at least 20 images.',
@@ -382,9 +396,8 @@ export default function App() {
         return;
       }
 
-      // Check resolution and integrity of each image
+      // Check integrity of each image
       const details: { filename: string; width: number; height: number }[] = [];
-      const minResolution = 1024;
 
       for (const imgFile of imageFiles) {
         const blob = await imgFile.async('blob');
@@ -403,19 +416,9 @@ export default function App() {
             image.src = url;
           });
 
-          if (img.width < minResolution || img.height < minResolution) {
-            toast.error(`"${imgFile.name}" resolution is too low (${img.width}x${img.height}). Min: ${minResolution}px.`);
-            setZipValidation({
-              status: 'error',
-              message: 'Image resolution too low.',
-              imageCount: imageFiles.length,
-            });
-            setFiles([]);
-            return;
-          }
           details.push({ filename: imgFile.name, width: img.width, height: img.height });
         } catch (err) {
-          toast.error(err instanceof Error ? err.message : 'Invalid image detected.');
+          systemToast.error(err instanceof Error ? err.message : 'Invalid image detected.');
           setZipValidation({
             status: 'error',
             message: 'Invalid image detected.',
@@ -426,7 +429,7 @@ export default function App() {
         }
       }
 
-      setZipValidation({ status: 'valid', message: `${imageFiles.length} high-resolution images validated.`, imageCount: imageFiles.length });
+      setZipValidation({ status: 'valid', message: `${imageFiles.length} images validated.`, imageCount: imageFiles.length });
       setImageDetails(details);
     } catch (err) {
       setZipValidation({
@@ -501,8 +504,8 @@ export default function App() {
                       value={artistName}
                       onChange={(e) => setArtistName(e.target.value)}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
-                      placeholder="E.G. JANE DOE"
+                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest placeholder:text-gray-300 bg-transparent"
+                      placeholder="e.g. jane doe"
                     />
                   </div>
 
@@ -530,8 +533,8 @@ export default function App() {
                       }}
                       disabled={tags.length >= 3}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent disabled:opacity-40"
-                      placeholder={tags.length >= 3 ? 'MAX 3 TAGS' : 'TYPE A TAG + PRESS ENTER'}
+                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest placeholder:text-gray-300 bg-transparent disabled:opacity-40"
+                      placeholder={tags.length >= 3 ? 'MAX 3 TAGS' : 'type a tag + press enter'}
                     />
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 justify-center mt-3">
@@ -688,8 +691,8 @@ export default function App() {
                       value={triggerWord}
                       onChange={(e) => setTriggerWord(e.target.value)}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
-                      placeholder="E.G. MYSTYLE"
+                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest placeholder:text-gray-300 bg-transparent"
+                      placeholder="e.g. mystyle"
                     />
                   </div>
                   <div>
@@ -699,8 +702,8 @@ export default function App() {
                       value={modelName}
                       onChange={(e) => setModelName(e.target.value)}
                       style={{ borderColor: '#000000', borderStyle: 'outset', borderWidth: '3px' }}
-                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest uppercase placeholder:text-gray-300 bg-transparent"
-                      placeholder="E.G. tattzy25/tattty_4_all 1"
+                      className="w-full h-auto p-3 rounded-xl focus-visible:ring-2 focus-visible:ring-black/5 outline-none transition-all text-black text-center font-bold tracking-widest placeholder:text-gray-300 bg-transparent"
+                      placeholder="e.g. tattzy25/tattty_4_all 1"
                     />
                   </div>
                   <div>
