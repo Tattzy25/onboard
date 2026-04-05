@@ -1,43 +1,27 @@
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { SystemAlert } from "./alert"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      icons={{
-        success: (
-          <CircleCheckIcon className="size-4" />
-        ),
-        info: (
-          <InfoIcon className="size-4" />
-        ),
-        warning: (
-          <TriangleAlertIcon className="size-4" />
-        ),
-        error: (
-          <OctagonXIcon className="size-4" />
-        ),
-        loading: (
-          <Loader2Icon className="size-4 animate-spin" />
-        ),
-      }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
-        } as React.CSSProperties
-      }
       toastOptions={{
-        classNames: {
-          toast: "cn-toast",
-        },
+        unstyled: true,
+      }}
+      content={(props) => {
+        if (typeof props.toast.title !== 'string') return null;
+        
+        return (
+          <SystemAlert
+            id={props.toast.id as string}
+            variant={props.toast.type === 'error' ? 'error' : props.toast.type === 'success' ? 'success' : props.toast.type === 'warning' ? 'warning' : 'info'}
+            title={props.toast.title as string}
+            description={props.toast.description as string}
+            isVisible={true}
+            onClose={() => props.onClose()}
+            autoDismiss={5}
+          />
+        );
       }}
       {...props}
     />

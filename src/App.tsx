@@ -7,28 +7,44 @@ import JSZip from 'jszip';
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
+import { CopyIcon } from "../components/ui/copy";
+import { DownloadIcon } from "../components/ui/download";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Badge } from "../components/ui/badge";
 
 const platformInstructions: Record<string, string[]> = {
   shopify: [
-    'Open your Shopify admin and go to Online Store > Themes.',
+    'Where: Online Store > Themes > Customize > (open theme) > Edit code OR Theme settings > Custom HTML section.',
+    'In Shopify admin, go to Online Store > Themes > Customize.',
+    'Open the page/section where you want the iframe. Click the block that allows HTML or select “Custom HTML” (or use Edit code → relevant template if no HTML block).',
+    'Paste this snippet where you want it:',
+    '<iframe src="https://embed.tattty.com?{{version=}}&{{gen_id}}=" />',
+    'Save and preview. If it’s blocked, use Edit code and paste into the template file inside the section you want.',
   ],
   squarespace: [
-    'Edit the page where you want the generator to appear.',
-    'Add a Code Block to the section.',
-    'Paste the embed code, apply changes, and publish the page.',
+    'Where: Pages > Edit Page > Add Block > Code Block. (Need a plan that supports Code Block.)',
+    'Edit the page and click the + to add a block.',
+    'Choose “Code” block.',
+    'Paste the iframe code above.',
+    '<iframe src="https://embed.tattty.com?version=VERSION_ID&gen_id=GEN_ID=" />',
+    'Click Apply → Save page → Preview.',
   ],
   wix: [
-    'Open the Wix Editor and choose the page for your generator.',
-    'Add an Embed Code element from the Add panel.',
-    'Paste the iframe code and resize the element to fit your layout.',
+    'Where: Editor > Add (+) > Embed > Embed a Widget > HTML iframe.',
+    'Open Wix Editor and the page you want.',
+    'Add > Embed > Embed a Widget > “HTML iframe” or “Custom Embeds” → Enter Code.',
+    'Paste the iframe snippet.',
+    '<iframe src="https://embed.tattty.com?version=VERSION_ID&gen_id=GEN_ID=" />',
+    'Resize the frame on page, Save & Publish.',
   ],
   wordpress: [
-    'Open the page or post in the WordPress editor.',
-    'Insert a Custom HTML block where the generator should appear.',
-    'Paste the embed code and update or publish the page.',
+    'Where: Page/Post editor → Add block → Custom HTML (or use theme editor if needed). Business plan required on wordpress.com for third‑party iframes.',
+    'Edit the page/post. Click + and choose “Custom HTML.”',
+    'Paste the iframe snippet.',
+    '<iframe src="https://embed.tattty.com?version=VERSION_ID&gen_id=GEN_ID=" />',
+    'Preview and Publish.',
   ],
 };
 
@@ -261,12 +277,29 @@ export default function App() {
   };
 
   const handleShareEmbed = async () => {
+    const shareUrl = `${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}`;
+    const shareText = "Yo check what i just came up on in TaTTTy.com app";
+    
     if (navigator.share) {
-      await navigator.share({
-        title: modelName || DEFAULT_MODEL_TITLE,
-        text: 'Embed this generator on your site',
-        url: `${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}`,
-      });
+      try {
+        await navigator.share({
+          title: modelName || DEFAULT_MODEL_TITLE,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          toast.error('Failed to share.');
+        }
+      }
+    } else {
+      // Fallback: Copy to clipboard if Web Share API is not available
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+        toast.success('Share message copied to clipboard!');
+      } catch (err) {
+        toast.error('Failed to copy share message.');
+      }
     }
   };
 
@@ -813,13 +846,36 @@ export default function App() {
                     </pre>
                   </div>
                 </div>
-                <button
-                  onClick={handleCopyEmbed}
-                  className="flex items-center gap-2 px-5 py-2 rounded-full bg-black text-white text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-gray-800 active:scale-[0.97] transition-all"
-                >
-                  <Copy className="w-3 h-3" />
-                  {copied ? 'Copied!' : 'Copy Embed Code'}
-                </button>
+                <div className="flex items-center justify-center gap-8 mt-4">
+                  <div className="relative flex flex-col items-center gap-2">
+                    <button
+                      onClick={handleCopyEmbed}
+                      className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
+                      title="Copy Embed Code"
+                    >
+                      <CopyIcon size={28} />
+                    </button>
+                    {copied && (
+                      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest text-green-600 animate-in fade-in slide-in-from-bottom-1">
+                        Copied!
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleDownloadCode}
+                    className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
+                    title="Download Code"
+                  >
+                    <DownloadIcon size={28} />
+                  </button>
+                  <button
+                    onClick={handleShareEmbed}
+                    className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
+                    title="Share Embed"
+                  >
+                    <Share2 className="w-7 h-7" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -831,29 +887,57 @@ export default function App() {
               </div>
               <div className="flex-1 flex flex-col items-center justify-center">
                 <div className="w-full max-w-[500px] flex flex-col gap-4">
-                  <div className="flex flex-wrap gap-2 w-full justify-center">
-                    {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
-                      <Button
-                        key={platform}
-                        onClick={() => setActivePlatform(platform)}
-                        className={cn(
-                          'px-4 py-2 rounded-full font-bold text-[10px] tracking-widest uppercase transition-all',
-                          activePlatform === platform ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200',
-                        )}
-                      >
-                        {platform}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="min-h-[220px] px-4 flex items-center">
-                    <div className="space-y-2 w-full">
-                      {platformInstructions[activePlatform].map((instruction, idx) => (
-                        <p key={idx} className="text-xs font-medium text-gray-700 leading-relaxed">
-                          {instruction}
-                        </p>
+                  <Tabs value={activePlatform} onValueChange={setActivePlatform} className="w-full">
+                    <TabsList className="w-full flex justify-center bg-transparent gap-2 h-auto p-0">
+                      {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
+                        <TabsTrigger
+                          key={platform}
+                          value={platform}
+                          className={cn(
+                            "px-4 py-2 rounded-full font-bold text-[10px] tracking-widest uppercase transition-all border-none shadow-none bg-gray-100 text-gray-500 data-[active]:bg-black data-[active]:text-white hover:bg-gray-200",
+                          )}
+                        >
+                          {platform}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    <div className="min-h-[160px] px-4 flex items-start mt-2">
+                      {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
+                        <TabsContent key={platform} value={platform} className="w-full m-0 border-none p-0 focus-visible:ring-0">
+                          <div className="space-y-0.5 w-full">
+                            {platformInstructions[platform].map((instruction, idx) => {
+                              const displayInstruction = instruction
+                                .replace('{{version=}}', `version=${versionId || 'VERSION_ID'}`)
+                                .replace('{{gen_id}}', `gen_id=${embedRandom || 'GEN_ID'}`)
+                                .replace('VERSION_ID', versionId || 'VERSION_ID')
+                                .replace('GEN_ID', embedRandom || 'GEN_ID');
+                              
+                              const isIframe = instruction.startsWith('<iframe');
+                              const isWhere = instruction.startsWith('Where:');
+
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className={cn(
+                                    "font-['Roboto',sans-serif] text-[14px] md:text-[16px] font-medium text-gray-700 leading-tight flex gap-2",
+                                    isIframe && "font-mono bg-gray-100 p-1.5 rounded mt-0.5 break-all border border-gray-200 text-[12px] md:text-[13px] tracking-tight leading-none",
+                                    !isIframe && !isWhere && "pl-4 relative"
+                                  )}
+                                >
+                                  {!isIframe && !isWhere && (
+                                    <span className="absolute left-0 top-0">•</span>
+                                  )}
+                                  <span className="flex-1">
+                                    {isWhere ? <strong>{displayInstruction}</strong> : displayInstruction}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </TabsContent>
                       ))}
                     </div>
-                  </div>
+                  </Tabs>
                 </div>
               </div>
               <div className="pt-4 opacity-0 pointer-events-none">
