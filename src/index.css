@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Rock+Salt&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Roboto:wght@400;500;700&display=swap');
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
@@ -154,16 +154,16 @@
 }
 
 /* Custom Sonner styling for error messages */
-[data-sonner-toast][data-type="error"] {
+[data-sonner-toast][data-type='error'] {
   background-color: #ef4444 !important;
   color: white !important;
   border-color: #dc2626 !important;
 }
 
-[data-sonner-toast][data-type="error"] [data-icon] {
+[data-sonner-toast][data-type='error'] [data-icon] {
   color: white !important;
 }
 
-[data-sonner-toast][data-type="error"] [data-description] {
+[data-sonner-toast][data-type='error'] [data-description] {
   color: rgba(255, 255, 255, 0.9) !important;
 }
