@@ -6,6 +6,7 @@ import JSZip from 'jszip';
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { toast } from "sonner";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Badge } from "../components/ui/badge";
@@ -62,6 +63,8 @@ export default function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
+  const [versionId, setVersionId] = useState<string>('');
+  const [embedRandom, setEmbedRandom] = useState<string>('');
 
   // Detect user ID from Shopify context
   useEffect(() => {
@@ -104,7 +107,7 @@ export default function App() {
   ) {
     const formData = new FormData();
 
-    formData.append('user_id', userId);
+    formData.append('user_id', 'owner123');
     formData.append('model_name', modelName);
     formData.append('trigger_word', triggerWord);
     formData.append('artist_name', artistName);
@@ -118,7 +121,7 @@ export default function App() {
     formData.append('zipped_folder', zipFile);
 
     try {
-      const response = await fetch('/api/build-model', {
+      const response = await fetch('https://dify-bridge.railway.internal/train', {
         method: 'POST',
         body: formData,
       });
@@ -132,6 +135,8 @@ export default function App() {
         throw new Error(result.error);
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Network error or server unreachable.';
+      toast.error(`Upload failed: ${errorMsg}`);
       console.error('Upload failed:', error);
       throw error;
     }
@@ -158,17 +163,22 @@ export default function App() {
   const handleTrain = async () => {
     // Validate required fields
     if (!files.length) {
-      alert('Please upload a dataset archive (.zip file) first.');
+      toast.error('Please upload a dataset archive (.zip file) first.');
+      return;
+    }
+
+    if (!modelName.trim() && !triggerWord.trim()) {
+      toast.error('Please enter a model name and trigger word.');
       return;
     }
 
     if (!modelName.trim()) {
-      alert('Please enter a model name.');
+      toast.error('Please enter a model name.');
       return;
     }
 
     if (!triggerWord.trim()) {
-      alert('Please enter a trigger word.');
+      toast.error('Please enter a trigger word.');
       return;
     }
 
@@ -189,6 +199,12 @@ export default function App() {
       );
 
       console.log('Model upload successful:', result);
+
+      // Extract version ID from API response and generate random suffix
+      const vid = result.data?.version_id || result.data?.id || result.data?.workflow_run_id || '';
+      const rand = Array.from({length: 10}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]).join('');
+      setVersionId(vid);
+      setEmbedRandom(rand);
 
       // Set training status and advance to step 2
       setModelStatus('training');
@@ -236,14 +252,10 @@ export default function App() {
     }, 2500);
   };
 
+  const embedCode = `<iframe src="https://embed.tattty.com?version=${versionId}&gen_id=${embedRandom}" />`;
+
   const handleCopyEmbed = async () => {
-    await navigator.clipboard.writeText(`<iframe 
-  src="${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}" 
-  width="100%" 
-  height="800px" 
-  frameborder="0" 
-  style="border-radius: 32px; border: 1px solid #eaeaea;"
-></iframe>`);
+    await navigator.clipboard.writeText(embedCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -286,7 +298,9 @@ export default function App() {
 
     try {
       if (!file.name.toLowerCase().endsWith('.zip')) {
-        setZipValidation({ status: 'error', message: 'Please upload a ZIP file containing 20-30 high-resolution images.', imageCount: 0 });
+        const errorMsg = 'Invalid file format. Please upload a .zip folder.';
+        toast.error(errorMsg);
+        setZipValidation({ status: 'error', message: errorMsg, imageCount: 0 });
         setFiles([]);
         return;
       }
@@ -294,64 +308,93 @@ export default function App() {
       const zip = await JSZip.loadAsync(file);
       const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
       const imageFiles: JSZip.JSZipObject[] = [];
-      let nonImageFiles: string[] = [];
-      let totalFiles = 0;
+      let rejectedFiles: string[] = [];
 
       zip.forEach((relativePath, zipEntry) => {
         if (zipEntry.dir) return;
-        totalFiles++;
         const ext = '.' + relativePath.split('.').pop()!.toLowerCase();
         if (imageExtensions.includes(ext)) {
           imageFiles.push(zipEntry);
         } else {
-          nonImageFiles.push(relativePath);
+          rejectedFiles.push(relativePath);
         }
       });
 
-      if (nonImageFiles.length > 0) {
+      if (rejectedFiles.length > 0) {
+        toast.error(`ZIP contains ${rejectedFiles.length} invalid files (videos/docs). Please include only images (.jpg, .png, .webp).`);
         setZipValidation({
           status: 'error',
-          message: 'ZIP contains non-image files. Only image files (.jpg, .png, .webp) allowed.',
+          message: 'Only image files allowed.',
           imageCount: imageFiles.length,
         });
         setFiles([]);
         return;
       }
 
-      if (imageFiles.length < 20 || imageFiles.length > 30) {
+      if (imageFiles.length > 40) {
+        toast.error(`ZIP contains too many images (${imageFiles.length}). Maximum 40 allowed.`);
         setZipValidation({
           status: 'error',
-          message: `ZIP contains ${imageFiles.length} images. Please include exactly 20-30 high-resolution images.`,
+          message: 'Maximum 40 images allowed.',
           imageCount: imageFiles.length,
         });
         setFiles([]);
         return;
       }
 
-      // Check resolution of each image
+      if (imageFiles.length < 20) {
+        toast.error(`ZIP contains too few images (${imageFiles.length}). Please include at least 20 images.`);
+        setZipValidation({
+          status: 'error',
+          message: 'Include at least 20 images.',
+          imageCount: imageFiles.length,
+        });
+        setFiles([]);
+        return;
+      }
+
+      // Check resolution and integrity of each image
       const details: { filename: string; width: number; height: number }[] = [];
       const minResolution = 1024;
 
       for (const imgFile of imageFiles) {
         const blob = await imgFile.async('blob');
-        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-          const url = URL.createObjectURL(blob);
-          const image = new Image();
-          image.onload = () => resolve(image);
-          image.onerror = () => reject(new Error(`Failed to load ${imgFile.name}`));
-          image.src = url;
-        });
+        try {
+          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const url = URL.createObjectURL(blob);
+            const image = new Image();
+            image.onload = () => {
+              URL.revokeObjectURL(url);
+              resolve(image);
+            };
+            image.onerror = () => {
+              URL.revokeObjectURL(url);
+              reject(new Error(`"${imgFile.name}" is not a valid or corrupt image.`));
+            };
+            image.src = url;
+          });
 
-        if (img.width < minResolution || img.height < minResolution) {
+          if (img.width < minResolution || img.height < minResolution) {
+            toast.error(`"${imgFile.name}" resolution is too low (${img.width}x${img.height}). Min: ${minResolution}px.`);
+            setZipValidation({
+              status: 'error',
+              message: 'Image resolution too low.',
+              imageCount: imageFiles.length,
+            });
+            setFiles([]);
+            return;
+          }
+          details.push({ filename: imgFile.name, width: img.width, height: img.height });
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Invalid image detected.');
           setZipValidation({
             status: 'error',
-            message: `"${imgFile.name}" is too small (${img.width}x${img.height}). Minimum resolution: ${minResolution}x${minResolution}px.`,
+            message: 'Invalid image detected.',
             imageCount: imageFiles.length,
           });
           setFiles([]);
           return;
         }
-        details.push({ filename: imgFile.name, width: img.width, height: img.height });
       }
 
       setZipValidation({ status: 'valid', message: `${imageFiles.length} high-resolution images validated.`, imageCount: imageFiles.length });
@@ -384,16 +427,6 @@ export default function App() {
     maxFiles: 1,
   });
 
-  const embedCode = useMemo(
-    () => `<iframe 
-  src="${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}" 
-  width="100%" 
-  height="800px" 
-  frameborder="0" 
-  style="border-radius: 32px; border: 1px solid #eaeaea;"
-></iframe>`,
-    [modelName],
-  );
 
   return (
     <div className="min-h-screen bg-white text-black flex flex-col pt-24 md:pt-28">
@@ -763,12 +796,30 @@ export default function App() {
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Embed Anywhere</h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[500px] flex flex-col">
-                  <p className="text-xs font-medium tracking-wide text-gray-600 leading-relaxed text-center mb-4">
-                    Drop this on your website and your clients can generate concepts in your style directly on the bottom of it.
-                  </p>
+              <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                <p className="text-xs font-medium tracking-wide text-gray-600 leading-relaxed text-center max-w-[400px]">
+                  Drop this on your website and your clients can generate concepts in your style directly on the bottom of it.
+                </p>
+                <div className="w-full max-w-[460px] bg-black rounded-2xl p-0 h-[220px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col">
+                  <div className="bg-[#1a1a1a] px-4 py-3 flex items-center gap-2 w-full border-b border-gray-800 flex-shrink-0">
+                    <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                    <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                    <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+                    <span className="ml-2 text-[10px] font-mono text-gray-400 tracking-widest uppercase">embed.html</span>
+                  </div>
+                  <div className="flex-1 p-4 overflow-auto">
+                    <pre className="font-mono text-[11px] text-[#00ff00] leading-relaxed whitespace-pre-wrap break-all">
+{embedCode}
+                    </pre>
+                  </div>
                 </div>
+                <button
+                  onClick={handleCopyEmbed}
+                  className="flex items-center gap-2 px-5 py-2 rounded-full bg-black text-white text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-gray-800 active:scale-[0.97] transition-all"
+                >
+                  <Copy className="w-3 h-3" />
+                  {copied ? 'Copied!' : 'Copy Embed Code'}
+                </button>
               </div>
             </div>
 

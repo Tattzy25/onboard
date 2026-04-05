@@ -22,7 +22,7 @@ async function startServer() {
     { name: 'zipped_folder', maxCount: 1 }
   ]), async (req, res) => {
     try {
-      const { user_id, model_name, trigger_word, artist_name, description, tags } = req.body;
+      const { model_name, trigger_word, artist_name, description, tags } = req.body;
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       
       const coverImageFile = files?.cover_image?.[0];
@@ -30,14 +30,13 @@ async function startServer() {
 
       // Build FormData to send to Dify - pass everything as-is
       const formData = new FormData();
-      formData.append('artist_name', artist_name);
-      formData.append('model_name', model_name);
-      formData.append('trigger_word', trigger_word);
-      formData.append('tags', tags);
+      formData.append('user_id', 'owner123');
+      formData.append('model_name', model_name || '');
+      formData.append('trigger_word', trigger_word || '');
+      formData.append('artist_name', artist_name || '');
+      formData.append('description', description || '');
+      formData.append('tags', tags || '');
       
-      if (description) {
-        formData.append('description', description);
-      }
       
       // Append files
       if (coverImageFile) {
@@ -49,7 +48,7 @@ async function startServer() {
       }
 
       // Forward to Dify endpoint
-      const difyResponse = await fetch('https://dify-bridge.railway.app/train', {
+      const difyResponse = await fetch('https://dify-bridge.railway.internal/train', {
         method: 'POST',
         body: formData
       });

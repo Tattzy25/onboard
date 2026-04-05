@@ -152,3 +152,18 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+/* Custom Sonner styling for error messages */
+[data-sonner-toast][data-type="error"] {
+  background-color: #ef4444 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: white !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description] {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
