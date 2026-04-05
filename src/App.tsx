@@ -19,24 +19,28 @@ const platformInstructions: Record<string, string[]> = {
     'Where: Online Store > Themes > Customize > (open theme) > Edit code OR Theme settings > Custom HTML section.',
     'Step 1: In Shopify admin, go to Online Store > Themes > Customize.',
     'Step 2: Open the page/section where you want the iframe. Click the block that allows HTML or select “Custom HTML” (or use Edit code → relevant template if no HTML block).',
-    'Step 3: Paste this snippet where you want it:',
-    '<iframe src="https://embed.tattty.com?{{version=}}&{{gen_id}}=" />',
+    'Step 3: Paste the embed code.',
     'Step 4: Save and preview. If it’s blocked, use Edit code and paste into the template file inside the section you want.',
   ],
   squarespace: [
-    'Edit the page where you want the generator to appear.',
-    'Add a Code Block to the section.',
-    'Paste the embed code, apply changes, and publish the page.',
+    'Where: Pages > Edit Page > Add Block > Code Block. (Need a plan that supports Code Block.)',
+    'Step 1: Edit the page and click the + to add a block.',
+    'Step 2: Choose "Code" block.',
+    'Step 3: Paste the embed code.',
+    'Step 4: Click Apply → Save page → Preview.',
   ],
   wix: [
-    'Open the Wix Editor and choose the page for your generator.',
-    'Add an Embed Code element from the Add panel.',
-    'Paste the iframe code and resize the element to fit your layout.',
+    'Where: Editor > Add (+) > Embed > Embed a Widget > HTML iframe.',
+    'Step 1: Open Wix Editor and the page you want.',
+    'Step 2: Add > Embed > Embed a Widget > "HTML iframe" or "Custom Embeds" → Enter Code.',
+    'Step 3: Paste the embed code.',
+    'Step 4: Resize the frame on page, Save & Publish.',
   ],
   wordpress: [
-    'Open the page or post in the WordPress editor.',
-    'Insert a Custom HTML block where the generator should appear.',
-    'Paste the embed code and update or publish the page.',
+    'Where: Page/Post editor → Add block → Custom HTML (or use theme editor if needed). Business plan required on wordpress.com for third‑party iframes.',
+    'Step 1: Edit the page/post. Click + and choose "Custom HTML."',
+    'Step 2: Paste the embed code.',
+    'Step 3: Preview and Publish.',
   ],
 };
 
@@ -208,11 +212,11 @@ export default function App() {
 
       console.log('Model upload successful:', result);
 
-      // Extract version ID from API response and generate random suffix
-      const vid = result.data?.version_id || result.data?.id || result.data?.workflow_run_id || '';
-      const rand = Array.from({length: 10}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]).join('');
+      // Extract version ID and Gen ID from API response
+      const vid = result.data?.version_id || '';
+      const genId = result.data?.gen_id || '';
       setVersionId(vid);
-      setEmbedRandom(rand);
+      setEmbedRandom(genId);
 
       // Set training status and advance to step 2
       setModelStatus('training');
@@ -260,7 +264,7 @@ export default function App() {
     }, 2500);
   };
 
-  const embedCode = `<iframe src="https://embed.tattty.com?version=${versionId}&gen_id=${embedRandom}" />`;
+  const embedCode = `<iframe src="https://embed.tattty.com?${versionId}&${embedRandom}" />`;
 
   const handleCopyEmbed = async () => {
     await navigator.clipboard.writeText(embedCode);
@@ -454,7 +458,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col pt-24 md:pt-28">
+    <div className="min-h-screen bg-white text-black flex flex-col pt-[56px] md:pt-[76px]">
       <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow-lg border border-gray-200 mx-auto">
         <Button
           variant="ghost"
@@ -814,18 +818,31 @@ export default function App() {
       )}
 
       {step === 3 && (
-        <div className="flex-1 w-full my-auto flex flex-col items-center justify-center">
-          {/* TWO COLUMNS: EMBED & INSTALLATION */}
-          <div className="w-full flex flex-col lg:flex-row items-start justify-center gap-1 xl:gap-1 mb-8 px-4 animate-in fade-in duration-500">
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700">
-              <div className="pb-4 mb-4">
-                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Embed Anywhere</h2>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                <p className="text-xs font-medium tracking-wide text-gray-600 leading-relaxed text-center max-w-[400px]">
-                  Drop this on your website and your clients can generate concepts in your style directly on the bottom of it.
+        <div className="flex-1 w-full flex flex-col pt-12 pb-[100px] h-full relative">
+          
+          {/* ISOLATED FIXED HEADERS AT THE TOP */}
+          <div className="w-full flex flex-col lg:flex-row items-center lg:items-start justify-center gap-1 xl:gap-1 px-4 mb-4 flex-shrink-0 animate-in fade-in duration-500">
+            <div className="w-full lg:flex-1 lg:w-0">
+              <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Drop It on ANYTHING</h2>
+            </div>
+            
+            <div className="hidden lg:block w-[3px] opacity-0" />
+            
+            <div className="w-full lg:flex-1 lg:w-0">
+              <h2 className="text-2xl font-['Rock_Salt'] text-black text-center mt-6 lg:mt-0">Copy Paste BASICS</h2>
+            </div>
+          </div>
+
+          {/* SCROLLABLE BODY CONTENT */}
+          <div className="flex-1 w-full flex flex-col lg:flex-row items-stretch justify-center gap-1 xl:gap-1 px-4 overflow-y-auto animate-in fade-in duration-700">
+            
+            {/* LEFT BODY COLUMN (EMBED) */}
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-start lg:justify-center pb-12 lg:pt-8">
+              <div className="w-full max-w-[460px] flex flex-col items-center gap-4">
+                <p className="text-[16px] font-['Roboto_Condensed',sans-serif] font-medium tracking-wide text-gray-600 leading-relaxed text-center">
+                  Dont Even think twice just Copy Paste It anywhere, Your girlfriend's website your grandma's blog it doesn't matter.
                 </p>
-                <div className="w-full max-w-[460px] bg-black rounded-2xl p-0 h-[220px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col">
+                <div className="w-full bg-black rounded-2xl p-0 h-auto min-h-[120px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col">
                   <div className="bg-[#1a1a1a] px-4 py-3 flex items-center gap-2 w-full border-b border-gray-800 flex-shrink-0">
                     <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
                     <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
@@ -838,49 +855,56 @@ export default function App() {
                     </pre>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-8 mt-4">
-                  <div className="relative flex flex-col items-center gap-2">
+                  <div className="flex items-center justify-center gap-8 mt-2">
+                    <div className="relative flex flex-col items-center gap-2">
+                      <button
+                        onClick={handleCopyEmbed}
+                        className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
+                        title="Copy Embed Code"
+                      >
+                        <CopyIcon size={28} />
+                      </button>
+                      {copied && (
+                        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest text-green-600 animate-in fade-in slide-in-from-bottom-1">
+                          Copied!
+                        </span>
+                      )}
+                    </div>
                     <button
-                      onClick={handleCopyEmbed}
+                      onClick={handleDownloadCode}
                       className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
-                      title="Copy Embed Code"
+                      title="Download Code"
                     >
-                      <CopyIcon size={28} />
+                      <DownloadIcon size={28} />
                     </button>
-                    {copied && (
-                      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest text-green-600 animate-in fade-in slide-in-from-bottom-1">
-                        Copied!
-                      </span>
-                    )}
+                    <button
+                      onClick={handleShareEmbed}
+                      className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
+                      title="Share Embed"
+                    >
+                      <Share2 className="w-7 h-7" />
+                    </button>
                   </div>
-                  <button
-                    onClick={handleDownloadCode}
-                    className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
-                    title="Download Code"
-                  >
-                    <DownloadIcon size={28} />
-                  </button>
-                  <button
-                    onClick={handleShareEmbed}
-                    className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
-                    title="Share Embed"
-                  >
-                    <Share2 className="w-7 h-7" />
-                  </button>
+                  
+                  <div className="w-full flex justify-center text-gray-600 text-[14px] md:text-[16px] mt-4">
+                    <div className="flex flex-col items-center text-center max-w-[460px]">
+                      <span className="font-['Rock_Salt'] mb-1">Still Need Help ?? Hit us up @</span>
+                      <a href="mailto:HelpMeCopyPaste@tattty.com" className="font-['Roboto_Condensed',sans-serif] font-bold text-black hover:underline">
+                        HelpMeCopyPaste@tattty.com
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
+              {/* SEPARATOR */}
+              <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 mx-4" />
 
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in slide-in-from-right-8 duration-700 delay-300 fill-mode-both">
-              <div className="pb-4 mb-4">
-                <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">Installation Guide</h2>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
+              {/* RIGHT BODY COLUMN (INSTALLATION) */}
+              <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center pb-12 mt-8 lg:mt-0">
                 <div className="w-full max-w-[500px] flex flex-col gap-4">
                   <Tabs value={activePlatform} onValueChange={setActivePlatform} className="w-full">
-                    <TabsList className="w-full flex justify-center bg-transparent gap-2 h-auto p-0">
+                    <TabsList className="w-full flex justify-center bg-transparent gap-2 h-auto p-0 mt-8">
                       {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
                         <TabsTrigger
                           key={platform}
@@ -893,7 +917,7 @@ export default function App() {
                         </TabsTrigger>
                       ))}
                     </TabsList>
-                    <div className="min-h-[220px] px-4 flex items-center mt-4">
+                    <div className="px-4 flex items-start mt-4 h-[250px]">
                       {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
                         <TabsContent key={platform} value={platform} className="w-full m-0 border-none p-0 focus-visible:ring-0">
                           <div className="space-y-2 w-full">
@@ -906,7 +930,7 @@ export default function App() {
                                 <p 
                                   key={idx} 
                                   className={cn(
-                                    "font-['Roboto',sans-serif] text-[14px] md:text-[16px] font-medium text-gray-700 leading-relaxed",
+                                    "font-['Roboto_Condensed',sans-serif] text-[14px] md:text-[16px] font-medium text-gray-700 leading-relaxed",
                                     instruction.startsWith('<iframe') && "font-mono bg-gray-100 p-2 rounded mt-1 break-all border border-gray-200"
                                   )}
                                 >
@@ -921,14 +945,12 @@ export default function App() {
                   </Tabs>
                 </div>
               </div>
-              <div className="pt-4 opacity-0 pointer-events-none">
-                <div className="h-6"></div>
-              </div>
-            </div>
+            
           </div>
 
-          <div className="w-full px-4 pb-8 flex justify-center animate-in slide-in-from-bottom-8 duration-700 delay-500">
-            <Button className="bg-black text-white px-12 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 border-4 border-black">
+          {/* ISOLATED FIXED FOOTER AT THE BOTTOM */}
+          <div className="fixed bottom-0 left-0 right-0 w-full py-6 flex justify-center bg-gradient-to-t from-white via-white to-transparent pointer-events-none z-50">
+            <Button className="pointer-events-auto bg-black text-white px-12 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 border-4 border-black animate-in slide-in-from-bottom-8 duration-700 delay-500">
               GO TO MY MODEL
             </Button>
           </div>
