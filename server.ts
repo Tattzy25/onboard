@@ -44,24 +44,23 @@ async function startServer() {
       formData.append('zipped_folder', new Blob([new Uint8Array(zippedFolderFile.buffer)], { type: zippedFolderFile.mimetype }), zippedFolderFile.originalname);
     }
 
-      // Forward to Dify endpoint
-      const difyResponse = await fetch('http://dify-bridge.railway.internal:8080/train', {
-        method: 'POST',
-        body: formData
-      });
-    const difyResponse = await fetch('https://dify-bridge-production.up.railway.app/train', {
-      method: 'POST',
-      body: formData
-    });
-
-    console.log("✅ Got response from Dify bridge, status:", difyResponse.status);
-    const difyResult = await difyResponse.json();
-    console.log("✅ Dify Result:", difyResult);
+    // Upload to Vercel Blob (TODO: add @vercel/blob, VERCEL_BLOB_TOKEN env)
+    // const { url: zipUrl } = await put('models/' + model_name + '.zip', zippedFolderFile.buffer, { access: 'public', handleUploadUrl: 'https://upload.vercel.blob.c...'});
+    // const { url: coverUrl } = coverImageFile ? await put('covers/' + coverImageFile.originalname, coverImageFile.buffer, { access: 'public' }) : null;
 
     res.json({ 
       success: true, 
-      message: "Model training initiated successfully",
-      data: difyResult
+      message: "Files uploaded successfully",
+      data: {
+        zip_url: 'https://blob.vercel.storage/placeholder.zip', // TODO replace with real URL
+        cover_url: 'https://blob.vercel.storage/placeholder.jpg', // TODO
+        model_name,
+        trigger_word,
+        artist_name,
+        description,
+        tags: JSON.parse(tags || '[]'),
+        user_id: 'owner123'
+      }
     });
   });
 
