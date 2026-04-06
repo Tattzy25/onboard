@@ -175,10 +175,13 @@ export default function App() {
       const zipResponse = await fetch('/api/upload-blob', {
         method: 'POST',
         body: zipFormData,
+      }).catch((err) => {
+        throw new Error(`ZIP Upload Network Error: ${err.message}. Is the server running?`);
       });
 
       if (!zipResponse.ok) {
-        throw new Error('Failed to upload ZIP folder to Vercel Blob');
+        const errorText = await zipResponse.text().catch(() => 'No error body');
+        throw new Error(`ZIP Upload Failed: Status ${zipResponse.status} - ${errorText}`);
       }
       const zipData = await zipResponse.json();
       zipUrl = zipData.url;
@@ -193,10 +196,13 @@ export default function App() {
         const coverResponse = await fetch('/api/upload-blob', {
           method: 'POST',
           body: coverFormData,
+        }).catch((err) => {
+          throw new Error(`Cover Upload Network Error: ${err.message}`);
         });
 
         if (!coverResponse.ok) {
-          throw new Error('Failed to upload Cover Image to Vercel Blob');
+          const errorText = await coverResponse.text().catch(() => 'No error body');
+          throw new Error(`Cover Upload Failed: Status ${coverResponse.status} - ${errorText}`);
         }
         const coverData = await coverResponse.json();
         coverUrl = coverData.url;
@@ -224,10 +230,13 @@ export default function App() {
           },
           body: JSON.stringify(webhookData),
         }
-      );
+      ).catch((err) => {
+        throw new Error(`Webhook Network Error: ${err.message}`);
+      });
 
       if (!webhookResponse.ok) {
-        throw new Error('Failed to send data to webhook');
+        const errorText = await webhookResponse.text().catch(() => 'No error body');
+        throw new Error(`Webhook Failed: Status ${webhookResponse.status} - ${errorText}`);
       }
 
       // The webhook might not return a standard structured response,
