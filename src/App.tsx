@@ -176,15 +176,20 @@ export default function App() {
         method: 'POST',
         body: zipFormData,
       }).catch((err) => {
+        console.error('[FRONTEND] ZIP Upload Network Error:', err);
         throw new Error(`ZIP Upload Network Error: ${err.message}. Is the server running?`);
       });
 
       if (!zipResponse.ok) {
         const errorText = await zipResponse.text().catch(() => 'No error body');
+        console.error(
+          `[FRONTEND] ZIP Upload Failed. HTTP Status: ${zipResponse.status}, Error Body: ${errorText}`
+        );
         throw new Error(`ZIP Upload Failed: Status ${zipResponse.status} - ${errorText}`);
       }
       const zipData = await zipResponse.json();
       zipUrl = zipData.url;
+      console.log(`[FRONTEND] ZIP Upload Success! Received 200 OK. Vercel URL: ${zipUrl}`);
 
       // 2. Upload Cover Image to Vercel Blob (if exists)
       let coverUrl = '';
@@ -197,15 +202,20 @@ export default function App() {
           method: 'POST',
           body: coverFormData,
         }).catch((err) => {
+          console.error('[FRONTEND] Cover Upload Network Error:', err);
           throw new Error(`Cover Upload Network Error: ${err.message}`);
         });
 
         if (!coverResponse.ok) {
           const errorText = await coverResponse.text().catch(() => 'No error body');
+          console.error(
+            `[FRONTEND] Cover Upload Failed. HTTP Status: ${coverResponse.status}, Error Body: ${errorText}`
+          );
           throw new Error(`Cover Upload Failed: Status ${coverResponse.status} - ${errorText}`);
         }
         const coverData = await coverResponse.json();
         coverUrl = coverData.url;
+        console.log(`[FRONTEND] Cover Upload Success! Received 200 OK. Vercel URL: ${coverUrl}`);
       }
 
       // 3. Send metadata + Blob URLs immediately to the webhook
@@ -221,6 +231,8 @@ export default function App() {
         source: 'onboarding_app', // Added so you can easily route this in your if/else node
       };
 
+      console.log(`[FRONTEND] Sending Payload to Webhook:`, webhookData);
+
       const webhookResponse = await fetch(
         'https://trigger.ai-plugin.io/triggers/webhook/DroVv7RwOe5NYFan9yyOwCcn',
         {
@@ -231,17 +243,28 @@ export default function App() {
           body: JSON.stringify(webhookData),
         }
       ).catch((err) => {
+        console.error('[FRONTEND] Webhook Network Error:', err);
         throw new Error(`Webhook Network Error: ${err.message}`);
       });
 
       if (!webhookResponse.ok) {
         const errorText = await webhookResponse.text().catch(() => 'No error body');
+        console.error(
+          `[FRONTEND] Webhook Failed. HTTP Status: ${webhookResponse.status}, Error Body: ${errorText}`
+        );
         throw new Error(`Webhook Failed: Status ${webhookResponse.status} - ${errorText}`);
       }
 
       // The webhook might not return a standard structured response,
       // so we safely parse and extract what we need to continue the flow.
-      const result = await webhookResponse.json().catch(() => ({}));
+      const resultText = await webhookResponse.text();
+      console.log(`[FRONTEND] Webhook Success! Received 200 OK. Webhook Response:`, resultText);
+      let result = {};
+      try {
+        result = JSON.parse(resultText);
+      } catch (e) {
+        // Not JSON, ignore
+      }
 
       const finalResult = {
         success: true,

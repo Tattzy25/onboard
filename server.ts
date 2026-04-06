@@ -74,17 +74,22 @@ async function startServer() {
       const isZip = ext === ".zip";
       const fileStream = fs.createReadStream(file.path);
       
+      console.log(`[VERCEL BLOB] Starting put() for: ${pathname} (Multipart: ${isZip})`);
+
       const blob = await put(pathname, fileStream, {
         access: "public",
         addRandomSuffix: false,
         multipart: isZip,
       });
 
+      console.log(`[VERCEL BLOB] SUCCESS [200 OK] - File accepted by Vercel.`);
+      console.log(`[VERCEL BLOB] File URL: ${blob.url}`);
+
       // Cleanup temp file from disk
       try {
         fs.unlinkSync(file.path);
       } catch (cleanupErr) {
-        console.error("Temp file cleanup error (ignored):", cleanupErr);
+        console.error("[VERCEL BLOB] Temp file cleanup error (ignored):", cleanupErr);
       }
 
       res.json({
@@ -93,7 +98,7 @@ async function startServer() {
         sku,
       });
     } catch (error) {
-      console.error("Blob upload error:", error);
+      console.error("[VERCEL BLOB] ERROR: Upload completely failed:", error);
       const message = error instanceof Error ? error.message : "Upload failed";
       res.status(500).json({ error: message });
     }
