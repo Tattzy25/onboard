@@ -165,35 +165,84 @@ export default function App() {
     coverImageFile: File | null,
     zipFile: File
   ) {
-    const formData = new FormData();
-
-    formData.append('user_id', 'owner123');
-    formData.append('model_name', modelName);
-    formData.append('trigger_word', triggerWord);
-    formData.append('artist_name', artistName);
-    formData.append('description', description);
-    formData.append('tags', JSON.stringify(tagsArray));
-
-    if (coverImageFile) {
-      formData.append('cover_image', coverImageFile);
-    }
-
-    formData.append('zipped_folder', zipFile);
-
     try {
-      const response = await fetch('/api/build-model', {
+      // 1. Upload Zip File to Vercel Blob
+      let zipUrl = '';
+      const zipFormData = new FormData();
+      zipFormData.append('file', zipFile);
+      zipFormData.append('title', modelName ? `${modelName}-dataset` : 'dataset');
+
+      const zipResponse = await fetch('/api/upload-blob', {
         method: 'POST',
-        body: formData,
+        body: zipFormData,
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        console.log('Upload success:', result);
-        return result;
-      } else {
-        throw new Error(result.error);
+      if (!zipResponse.ok) {
+        throw new Error('Failed to upload ZIP folder to Vercel Blob');
       }
+      const zipData = await zipResponse.json();
+      zipUrl = zipData.url;
+
+      // 2. Upload Cover Image to Vercel Blob (if exists)
+      let coverUrl = '';
+      if (coverImageFile) {
+        const coverFormData = new FormData();
+        coverFormData.append('file', coverImageFile);
+        coverFormData.append('title', modelName ? `${modelName}-cover` : 'cover');
+
+        const coverResponse = await fetch('/api/upload-blob', {
+          method: 'POST',
+          body: coverFormData,
+        });
+
+        if (!coverResponse.ok) {
+          throw new Error('Failed to upload Cover Image to Vercel Blob');
+        }
+        const coverData = await coverResponse.json();
+        coverUrl = coverData.url;
+      }
+
+      // 3. Send metadata + Blob URLs immediately to the webhook
+      const webhookData = {
+        model_name: modelName,
+        artist_name: artistName,
+        trigger_word: triggerWord,
+        description: description,
+        tags: tagsArray,
+        zip_url: zipUrl,
+        cover_url: coverUrl,
+        user_id: userId || 'owner123',
+      };
+
+      const webhookResponse = await fetch(
+        'https://trigger.ai-plugin.io/triggers/webhook/DroVv7RwOe5NYFan9yyOwCcn',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(webhookData),
+        }
+      );
+
+      if (!webhookResponse.ok) {
+        throw new Error('Failed to send data to webhook');
+      }
+
+      // The webhook might not return a standard structured response,
+      // so we safely parse and extract what we need to continue the flow.
+      const result = await webhookResponse.json().catch(() => ({}));
+
+      const finalResult = {
+        success: true,
+        data: {
+          version_id: result.version_id || 'v1',
+          gen_id: result.gen_id || 'gen123',
+        },
+      };
+
+      console.log('Upload success:', finalResult);
+      return finalResult;
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Network error or server unreachable.';
@@ -555,8 +604,8 @@ export default function App() {
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">1. Upload</h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[300px] flex flex-col gap-6">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
                   {/* ARTIST NAME */}
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">
@@ -819,8 +868,8 @@ export default function App() {
                   2. Brand & Train
                 </h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[300px] flex flex-col gap-6">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">
                       Trigger Word
@@ -881,11 +930,11 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <div className="pt-4 flex items-center justify-center">
+              <div className="pt-4 flex items-center justify-center w-full px-4 sm:px-8 lg:px-0">
                 <Button
                   onClick={handleTrain}
                   disabled={isUploading}
-                  className="w-full max-w-[300px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUploading ? (
                     <span className="flex items-center gap-2">
@@ -907,8 +956,8 @@ export default function App() {
                   3. Then What?
                 </h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="w-full max-w-[300px]">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px]">
                   <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">

@@ -16,80 +16,67 @@ async function startServer() {
   
   const upload = multer({ storage: multer.memoryStorage() });
 
-  app.post("/api/build-model", upload.fields([
-    { name: 'cover_image', maxCount: 1 },
-    { name: 'zipped_folder', maxCount: 1 }
-  ]), async (req, res) => {
-    console.log("🔥 /api/build-model HIT!");
-    
-    const { model_name, trigger_word, artist_name, description, tags } = req.body;
-    console.log("Body:", { model_name, trigger_word, artist_name, description, tags });
-    
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    const coverImageFile = files.cover_image?.[0];
-    const zippedFolderFile = files.zipped_folder?.[0];
-
-    let zipUrl = null;
-    let coverUrl = null;
-
+  app.post("/api/upload-blob", upload.single("file"), async (req, res) => {
     try {
-      const blob = await put(`training/${model_name || 'model'}-${Date.now()}.zip`, Buffer.from(zippedFolderFile.buffer), {
-        access: 'public',
-      });
-      zipUrl = blob.url;
-      console.log('ZIP uploaded to training/ folder:', zipUrl);
+      const file = req.file;
+      const title = req.body.title;
 
-      if (coverImageFile) {
-        const coverBlob = await put(`training/${Date.now()}-${coverImageFile.originalname}`, Buffer.from(coverImageFile.buffer), {
-          access: 'public',
-        });
-        coverUrl = coverBlob.url;
-        console.log('Cover uploaded:', coverUrl);
+      if (!file) {
+        return res.status(400).json({ error: "No file provided" });
       }
 
+      function slugify(text: string): string {
+        return text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/[\s_]+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 30);
+      }
 
-      // Send to Dify or webhook
-      const difyData = {
-        name: model_name,
-        description: description,
-        cover_image_url: coverUrl,
-        input_images: zipUrl,
-        trigger_word: trigger_word,
-        artist_name: artist_name,
-        tags: JSON.parse(tags || '[]')
-      };
+      function generateShortSku(): string {
+        // Generate a 6-character SKU starting with "TaT" + 3 random chars
+        const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        let suffix = "";
+        for (let i = 0; i < 3; i++) {
+          suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return `TaT${suffix}`;
+      }
 
-      // Option 1: Dify workflow
-      const workflowResponse = await fetch('https://api.dify.ai/v1/workflows/run', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.DIFY_API_KEY || ''}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          inputs: difyData,
-          response_mode: "blocking",
-          user: "owner123"
+      function getExtension(filename: string): string {
+        const ext = filename.split(".").pop()?.toLowerCase();
+        if (
+          ext &&
+          ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "zip"].includes(ext)
+        ) {
+          return `.${ext}`;
+        }
+        return ".png";
+      }
 
-        })
+      const ext = getExtension(file.originalname);
+      const slug = title
+        ? slugify(title)
+        : slugify(file.originalname.replace(/\.[^/.]+$/, ""));
+      const sku = generateShortSku();
+      const pathname = `training/${slug}-${sku}${ext}`;
+
+      const blob = await put(pathname, file.buffer, {
+        access: "public",
+        addRandomSuffix: false,
       });
 
-
-
-      const workflowResult = await workflowResponse.json();
-
-      res.json({ 
-        success: true, 
-        message: "Files processed and workflow triggered",
-        data: {
-          blob_urls: { zipUrl, coverUrl },
-          workflow: workflowResult
-        }
+      res.json({
+        url: blob.url,
+        pathname: blob.pathname,
+        sku,
       });
     } catch (error) {
-      console.error('Processing failed:', error);
-      res.status(500).json({ success: false, error: (error as Error).message || 'Unknown error' });
-
+      console.error("Blob upload error:", error);
+      const message = error instanceof Error ? error.message : "Upload failed";
+      res.status(500).json({ error: message });
     }
   });
 
