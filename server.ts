@@ -4,6 +4,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
 import { put } from '@vercel/blob';
+import { config } from 'dotenv';
+import fs from 'fs';
+
+// Load environment variables so the Blob SDK can find the token locally
+config({ path: '.env.local' });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +19,8 @@ async function startServer() {
 
   app.use(express.json());
   
-  const upload = multer({ storage: multer.memoryStorage() });
+  // Use disk storage instead of memory buffering to prevent Out Of Memory crashes on large zip files!
+  const upload = multer({ dest: 'uploads/' });
 
   app.post("/api/upload-blob", upload.single("file"), async (req, res) => {
     try {
@@ -22,7 +28,7 @@ async function startServer() {
       const title = req.body.title;
 
       if (!file) {
-        return res.status(400).json({ error: "No file provided" });
+        return res.status(400).json({ error: "No file provided in the request" });
       }
 
       function slugify(text: string): string {
@@ -63,10 +69,23 @@ async function startServer() {
       const sku = generateShortSku();
       const pathname = `training/${slug}-${sku}${ext}`;
 
-      const blob = await put(pathname, file.buffer, {
+      // For large ZIP files, we must use multipart: true to avoid the 4.5MB limit
+      // We stream from disk to avoid crashing the Node process memory
+      const isZip = ext === ".zip";
+      const fileStream = fs.createReadStream(file.path);
+      
+      const blob = await put(pathname, fileStream, {
         access: "public",
         addRandomSuffix: false,
+        multipart: isZip,
       });
+
+      // Cleanup temp file from disk
+      try {
+        fs.unlinkSync(file.path);
+      } catch (cleanupErr) {
+        console.error("Temp file cleanup error (ignored):", cleanupErr);
+      }
 
       res.json({
         url: blob.url,

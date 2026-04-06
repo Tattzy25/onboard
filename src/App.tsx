@@ -212,6 +212,7 @@ export default function App() {
         zip_url: zipUrl,
         cover_url: coverUrl,
         user_id: userId || 'owner123',
+        source: 'onboarding_app', // Added so you can easily route this in your if/else node
       };
 
       const webhookResponse = await fetch(
