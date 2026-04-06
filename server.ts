@@ -33,23 +33,20 @@ async function startServer() {
     let coverUrl = null;
 
     try {
-      if (zippedFolderFile) {
-        const { url: uploadedZipUrl } = await put(`models/${model_name || 'model'}-${Date.now()}.zip`, Buffer.from(zippedFolderFile.buffer), {
-          access: 'public',
-          addRandomSuffix: true
-        });
-        zipUrl = uploadedZipUrl;
-        console.log('ZIP uploaded:', zipUrl);
-      }
+      const blob = await put(`training/${model_name || 'model'}-${Date.now()}.zip`, Buffer.from(zippedFolderFile.buffer), {
+        access: 'public',
+      });
+      zipUrl = blob.url;
+      console.log('ZIP uploaded to training/ folder:', zipUrl);
 
       if (coverImageFile) {
-        const { url: uploadedCoverUrl } = await put(`covers/${Date.now()}-${coverImageFile.originalname}`, Buffer.from(coverImageFile.buffer), {
+        const coverBlob = await put(`training/${Date.now()}-${coverImageFile.originalname}`, Buffer.from(coverImageFile.buffer), {
           access: 'public',
-          addRandomSuffix: true
         });
-        coverUrl = uploadedCoverUrl;
+        coverUrl = coverBlob.url;
         console.log('Cover uploaded:', coverUrl);
       }
+
 
       // Send to Dify or webhook
       const difyData = {
@@ -72,16 +69,12 @@ async function startServer() {
         body: JSON.stringify({
           inputs: difyData,
           response_mode: "blocking",
-          user: "user123"
+          user: "owner123"
+
         })
       });
 
-      // Option 2: Webhook
-      // await fetch('https://trigger.ai-plugin.io/triggers/webhook-debug/DroVv7RwOe5NYFan9yyOwCcn', {
-      //   method: 'POST',
-      //   headers: {'Content-Type': 'application/json'},
-      //   body: JSON.stringify(difyData)
-      // });
+
 
       const workflowResult = await workflowResponse.json();
 
