@@ -1,17 +1,13 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from "url";
 import multer from "multer";
 import { put } from '@vercel/blob';
 import { config } from 'dotenv';
 import fs from 'fs';
 
-// Load environment variables so the Blob SDK can find the token locally
-config({ path: '.env.local' });
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Load environment variables
+config();
 
 async function startServer() {
   const app = express();

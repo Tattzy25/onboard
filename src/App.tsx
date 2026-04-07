@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   UploadCloud,
   Archive,
@@ -6,12 +6,9 @@ import {
   Layers,
   Globe,
   Users,
-  Copy,
   Share2,
-  Download,
   X,
   Image as ImageIcon,
-  Wand2,
   AlertCircle,
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
