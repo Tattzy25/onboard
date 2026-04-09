@@ -379,9 +379,9 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col">
+    <div className="min-h-screen bg-white text-black flex flex-col overflow-x-hidden w-full max-w-[100vw]">
       {step === 1 && (
-        <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
+        <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col overflow-x-hidden">
           <div className="w-full flex flex-col md:flex-row items-stretch justify-center gap-8 xl:gap-12 py-8 px-4 animate-in fade-in duration-500">
             <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
@@ -528,25 +528,24 @@ export default function App() {
                       </div>
                     ) : (
                       <div
-                        {...getRootProps()}
                         style={{
                           borderColor: '#000000',
                           borderStyle: 'outset',
                           borderWidth: '3px',
                         }}
                         className={cn(
-                          'w-full h-[55px] rounded-xl p-3 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center',
+                          'w-full min-h-[64px] rounded-xl p-4 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center active:scale-95 touch-manipulation',
                           isDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30'
                         )}
                       >
                         <input {...getInputProps()} />
                         <UploadCloud
                           className={cn(
-                            'w-4 h-4 mr-2 transition-colors',
+                            'w-5 h-5 mr-3 transition-colors',
                             isDragActive ? 'text-black' : 'text-gray-400'
                           )}
                         />
-                        <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">
+                        <div className="font-bold text-sm tracking-[0.2em] uppercase text-black">
                           UPLOAD ZIP
                         </div>
                       </div>
@@ -615,25 +614,24 @@ export default function App() {
                       </div>
                     ) : (
                       <div
-                        {...getCoverRootProps()}
                         style={{
                           borderColor: '#000000',
                           borderStyle: 'outset',
                           borderWidth: '3px',
                         }}
                         className={cn(
-                          'w-full h-[55px] rounded-xl p-3 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center',
+                          'w-full min-h-[64px] rounded-xl p-4 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center active:scale-95 touch-manipulation',
                           isCoverDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30'
                         )}
                       >
                         <input {...getCoverInputProps()} />
                         <ImageIcon
                           className={cn(
-                            'w-4 h-4 mr-2 transition-colors',
+                            'w-5 h-5 mr-3 transition-colors',
                             isCoverDragActive ? 'text-black' : 'text-gray-400'
                           )}
                         />
-                        <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">
+                        <div className="font-bold text-sm tracking-[0.2em] uppercase text-black">
                           UPLOAD IMAGE
                         </div>
                       </div>
