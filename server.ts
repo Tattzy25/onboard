@@ -98,28 +98,34 @@ async function startServer() {
         coverUrl = coverBlob.url;
       }
 
-      // 3. Fire Webhook from Server
-      const webhookData = {
-        model_name: modelName,
-        artist_name: artistName,
-        trigger_word: triggerWord,
-        description: description,
-        tags: tagsArray,
-        zip_url: zipBlob.url,
-        cover_url: coverUrl,
-        user_id: userId || 'owner123',
-        source: 'onboarding_app',
+      // 3. Call Dify API from Server
+      const difyPayload = {
+        inputs: {
+          name: modelName,
+          description: description,
+          cover_image_url: coverUrl,
+          input_images: zipBlob.url,
+          trigger_word: triggerWord,
+          artist_name: artistName,
+          artist_tags: tagsArray.join(", ")
+        },
+        response_mode: "blocking",
+        user: userId || "owner123"
       };
 
-      const webhookResponse = await fetch("https://trigger.ai-plugin.io/triggers/webhook/DroVv7RwOe5NYFan9yyOwCcn", {
+      const difyResponse = await fetch("https://api.dify.ai/v1/workflows/run", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(webhookData)
+        headers: { 
+          "Authorization": `Bearer ${process.env.DIFY_API_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "wait"
+        },
+        body: JSON.stringify(difyPayload)
       });
       
-      if (!webhookResponse.ok) {
-        const errText = await webhookResponse.text().catch(() => "No error body");
-        throw new Error(`Webhook Failed: Status ${webhookResponse.status} - ${errText}`);
+      if (!difyResponse.ok) {
+        const errText = await difyResponse.text().catch(() => "No error body");
+        throw new Error(`Dify API Failed: Status ${difyResponse.status} - ${errText}`);
       }
 
       // Cleanup temp files
