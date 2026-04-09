@@ -379,16 +379,16 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col overflow-x-hidden w-full max-w-[100vw]">
+    <div className="min-h-screen bg-white text-black flex flex-col pt-[56px] md:pt-[76px]">
       {step === 1 && (
-        <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col overflow-x-hidden">
-          <div className="w-full flex flex-col md:flex-row items-stretch justify-center gap-8 xl:gap-12 py-8 px-4 animate-in fade-in duration-500">
-            <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+        <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
+          <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 py-16 px-4 animate-in fade-in duration-500">
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">1. Upload</h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 md:px-0">
-                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
                   {/* ARTIST NAME */}
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">
@@ -534,18 +534,18 @@ export default function App() {
                           borderWidth: '3px',
                         }}
                         className={cn(
-                          'w-full min-h-[64px] rounded-xl p-4 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center active:scale-95 touch-manipulation',
+                          'w-full h-[55px] rounded-xl p-3 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center',
                           isDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30'
                         )}
                       >
                         <input {...getInputProps()} />
                         <UploadCloud
                           className={cn(
-                            'w-5 h-5 mr-3 transition-colors',
+                            'w-4 h-4 mr-2 transition-colors',
                             isDragActive ? 'text-black' : 'text-gray-400'
                           )}
                         />
-                        <div className="font-bold text-sm tracking-[0.2em] uppercase text-black">
+                        <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">
                           UPLOAD ZIP
                         </div>
                       </div>
@@ -620,18 +620,18 @@ export default function App() {
                           borderWidth: '3px',
                         }}
                         className={cn(
-                          'w-full min-h-[64px] rounded-xl p-4 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center active:scale-95 touch-manipulation',
+                          'w-full h-[55px] rounded-xl p-3 flex items-center justify-center cursor-pointer transition-all bg-transparent text-center',
                           isCoverDragActive ? 'bg-gray-200/50' : 'hover:bg-gray-200/30'
                         )}
                       >
                         <input {...getCoverInputProps()} />
                         <ImageIcon
                           className={cn(
-                            'w-5 h-5 mr-3 transition-colors',
+                            'w-4 h-4 mr-2 transition-colors',
                             isCoverDragActive ? 'text-black' : 'text-gray-400'
                           )}
                         />
-                        <div className="font-bold text-sm tracking-[0.2em] uppercase text-black">
+                        <div className="font-bold text-xs tracking-[0.2em] uppercase text-black">
                           UPLOAD IMAGE
                         </div>
                       </div>
@@ -641,16 +641,16 @@ export default function App() {
               </div>
             </div>
 
-            <div className="hidden md:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
+            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
 
-            <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">
                   2. Brand & Train
                 </h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 md:px-0">
-                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">
                       Trigger Word
@@ -711,11 +711,11 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <div className="pt-4 flex items-center justify-center w-full px-4 sm:px-8 md:px-0">
+              <div className="pt-4 flex items-center justify-center w-full px-4 sm:px-8 lg:px-0">
                 <Button
                   onClick={handleTrain}
                   disabled={isUploading}
-                  className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUploading ? (
                     <span className="flex items-center gap-2">
@@ -729,16 +729,16 @@ export default function App() {
               </div>
             </div>
 
-            <div className="hidden md:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
+            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
 
-            <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">
                   3. Then What?
                 </h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 md:px-0">
-                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px]">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px]">
                   <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
