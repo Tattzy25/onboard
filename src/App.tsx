@@ -379,10 +379,10 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col pt-[56px] md:pt-[76px]">
+    <div className="min-h-screen bg-white text-black flex flex-col">
       {step === 1 && (
         <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
-          <div className="w-full flex flex-col md:flex-row items-stretch justify-center gap-8 xl:gap-12 py-16 px-4 animate-in fade-in duration-500">
+          <div className="w-full flex flex-col md:flex-row items-stretch justify-center gap-8 xl:gap-12 py-8 px-4 animate-in fade-in duration-500">
             <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">1. Upload</h2>
