@@ -26,38 +26,6 @@ import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
 
-const platformInstructions: Record<string, string[]> = {
-  shopify: [
-    'Where: Online Store > Themes > Customize > (open theme) > Edit code OR Theme settings > Custom HTML section.',
-    'Step 1: In Shopify admin, go to Online Store > Themes > Customize.',
-    'Step 2: Open the page/section where you want the iframe. Click the block that allows HTML or select “Custom HTML” (or use Edit code → relevant template if no HTML block).',
-    'Step 3: Paste the embed code.',
-    'Step 4: Save and preview. If it’s blocked, use Edit code and paste into the template file inside the section you want.',
-  ],
-  squarespace: [
-    'Where: Pages > Edit Page > Add Block > Code Block. (Need a plan that supports Code Block.)',
-    'Step 1: Edit the page and click the + to add a block.',
-    'Step 2: Choose "Code" block.',
-    'Step 3: Paste the embed code.',
-    'Step 4: Click Apply → Save page → Preview.',
-  ],
-  wix: [
-    'Where: Editor > Add (+) > Embed > Embed a Widget > HTML iframe.',
-    'Step 1: Open Wix Editor and the page you want.',
-    'Step 2: Add > Embed > Embed a Widget > "HTML iframe" or "Custom Embeds" → Enter Code.',
-    'Step 3: Paste the embed code.',
-    'Step 4: Resize the frame on page, Save & Publish.',
-  ],
-  wordpress: [
-    'Where: Page/Post editor → Add block → Custom HTML (or use theme editor if needed). Business plan required on wordpress.com for third‑party iframes.',
-    'Step 1: Edit the page/post. Click + and choose "Custom HTML."',
-    'Step 2: Paste the embed code.',
-    'Step 3: Preview and Publish.',
-  ],
-};
-
-const DEFAULT_MODEL_TITLE = 'tattzy25/tattty_4_all 1';
-
 const systemToast = {
   error: (msg: string) => {
     toast.custom((t) => (
@@ -103,25 +71,14 @@ export default function App() {
     { filename: string; width: number; height: number }[]
   >([]);
   const [triggerWord, setTriggerWord] = useState('');
-  const [promptText, setPromptText] = useState('');
-  const [colorMode, setColorMode] = useState('color');
-  const [styleInput, setStyleInput] = useState('');
-  const [uploadedRef, setUploadedRef] = useState<File | null>(null);
   const [modelName, setModelName] = useState('');
   const [artistName, setArtistName] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [activePlatform, setActivePlatform] = useState('shopify');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState('');
-  const [modelStatus, setModelStatus] = useState<'idle' | 'training' | 'online'>('idle');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
-  const [versionId, setVersionId] = useState<string>('');
-  const [embedRandom, setEmbedRandom] = useState<string>('');
 
   // Detect user ID from Shopify context
   useEffect(() => {
@@ -163,93 +120,31 @@ export default function App() {
     zipFile: File
   ) {
     try {
-      // 1. Upload Zip File to Vercel Blob
-      let zipUrl = '';
-      const zipFormData = new FormData();
-      zipFormData.append('file', zipFile);
-      zipFormData.append('title', modelName ? `${modelName}-dataset` : 'dataset');
-
-      const zipResponse = await fetch('/api/upload-blob', {
-        method: 'POST',
-        body: zipFormData,
-      }).catch((err) => {
-        throw new Error(`ZIP Upload Network Error: ${err.message}. Is the server running?`);
-      });
-
-      if (!zipResponse.ok) {
-        const errorText = await zipResponse.text().catch(() => 'No error body');
-        throw new Error(`ZIP Upload Failed: Status ${zipResponse.status} - ${errorText}`);
-      }
-      const zipData = await zipResponse.json();
-      zipUrl = zipData.url;
-
-      // 2. Upload Cover Image to Vercel Blob (if exists)
-      let coverUrl = '';
+      const formData = new FormData();
+      formData.append('zip', zipFile);
       if (coverImageFile) {
-        const coverFormData = new FormData();
-        coverFormData.append('file', coverImageFile);
-        coverFormData.append('title', modelName ? `${modelName}-cover` : 'cover');
-
-        const coverResponse = await fetch('/api/upload-blob', {
-          method: 'POST',
-          body: coverFormData,
-        }).catch((err) => {
-          throw new Error(`Cover Upload Network Error: ${err.message}`);
-        });
-
-        if (!coverResponse.ok) {
-          const errorText = await coverResponse.text().catch(() => 'No error body');
-          throw new Error(`Cover Upload Failed: Status ${coverResponse.status} - ${errorText}`);
-        }
-        const coverData = await coverResponse.json();
-        coverUrl = coverData.url;
+        formData.append('cover', coverImageFile);
       }
+      formData.append('userId', userId);
+      formData.append('modelName', modelName);
+      formData.append('triggerWord', triggerWord);
+      formData.append('artistName', artistName);
+      formData.append('description', description);
+      formData.append('tags', JSON.stringify(tagsArray));
 
-      // 3. Send metadata + Blob URLs immediately to the webhook
-      const webhookData = {
-        model_name: modelName,
-        artist_name: artistName,
-        trigger_word: triggerWord,
-        description: description,
-        tags: tagsArray,
-        zip_url: zipUrl,
-        cover_url: coverUrl,
-        user_id: userId || 'owner123',
-        source: 'onboarding_app', // Added so you can easily route this in your if/else node
-      };
-
-      const webhookResponse = await fetch(
-        'https://trigger.ai-plugin.io/triggers/webhook/DroVv7RwOe5NYFan9yyOwCcn',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookData),
-        }
-      ).catch((err) => {
-        throw new Error(`Webhook Network Error: ${err.message}`);
+      const response = await fetch('/api/submit-model', {
+        method: 'POST',
+        body: formData,
       });
 
-      if (!webhookResponse.ok) {
-        const errorText = await webhookResponse.text().catch(() => 'No error body');
-        throw new Error(`Webhook Failed: Status ${webhookResponse.status} - ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'No error body');
+        throw new Error(`Server Error: Status ${response.status} - ${errorText}`);
       }
 
-      // The webhook might not return a standard structured response,
-      // so we safely parse and extract what we need to continue the flow.
-      const result = await webhookResponse.json().catch(() => ({}));
-
-      const finalResult = {
-        success: true,
-        data: {
-          version_id: result.version_id || 'v1',
-          gen_id: result.gen_id || 'gen123',
-        },
-      };
-
-      console.log('Upload success:', finalResult);
-      return finalResult;
+      const result = await response.json();
+      console.log('Upload success:', result);
+      return result;
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Network error or server unreachable.';
@@ -304,7 +199,7 @@ export default function App() {
 
     try {
       // Upload the model to the backend with all required data
-      const result = await uploadModel(
+      await uploadModel(
         userId,
         modelName,
         triggerWord,
@@ -315,18 +210,7 @@ export default function App() {
         files[0]
       );
 
-      console.log('Model upload successful:', result);
       systemToast.success('Upload successful! Starting training...');
-
-      // Extract version ID and Gen ID from API response
-      const vid = result.data?.version_id || '';
-      const genId = result.data?.gen_id || '';
-      setVersionId(vid);
-      setEmbedRandom(genId);
-
-      // Set training status and advance to step 2
-      setModelStatus('training');
-      setStep(2);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
       console.error('Model upload failed:', error);
@@ -350,81 +234,6 @@ export default function App() {
 
   const removeTag = (value: string) => {
     setTags((prev) => prev.filter((t) => t !== value));
-  };
-
-  const handleTrainingComplete = () => {
-    setModelStatus('online');
-    setStep(3);
-  };
-
-  const handleGoToGenerator = () => {
-    setStep(3);
-  };
-
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    setTimeout(() => {
-      setGeneratedImage(
-        'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?q=80&w=2000&auto=format&fit=crop'
-      );
-      setIsGenerating(false);
-    }, 2500);
-  };
-
-  const embedCode = `<iframe src="https://embed.tattty.com?${versionId}&${embedRandom}" />`;
-
-  const handleCopyEmbed = async () => {
-    await navigator.clipboard.writeText(embedCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleShareEmbed = async () => {
-    const shareUrl = `${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}`;
-    const shareText = 'Yo check what i just came up on in TaTTTy.com app';
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: modelName || DEFAULT_MODEL_TITLE,
-          text: shareText,
-          url: shareUrl,
-        });
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          systemToast.error('Failed to share.');
-        }
-      }
-    } else {
-      // Fallback: Copy to clipboard if Web Share API is not available
-      try {
-        await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
-        systemToast.success('Share message copied to clipboard!');
-      } catch (err) {
-        systemToast.error('Failed to copy share message.');
-      }
-    }
-  };
-
-  const handleDownloadCode = () => {
-    const blob = new Blob(
-      [
-        `<iframe 
-  src="${window.location.origin}/embed/${(modelName || DEFAULT_MODEL_TITLE).toLowerCase().replace(/\s+/g, '-')}" 
-  width="100%" 
-  height="800px" 
-  frameborder="0" 
-  style="border-radius: 32px; border: 1px solid #eaeaea;"
-></iframe>`,
-      ],
-      { type: 'text/html' }
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'embed-code.html';
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const onDrop = async (acceptedFiles: File[]) => {
@@ -581,26 +390,6 @@ export default function App() {
           )}
         >
           Setup
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => setStep(2)}
-          className={cn(
-            'px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors',
-            step === 2 ? 'bg-black text-white' : 'hover:bg-gray-100'
-          )}
-        >
-          Training
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => setStep(3)}
-          className={cn(
-            'px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors',
-            step === 3 ? 'bg-black text-white' : 'hover:bg-gray-100'
-          )}
-        >
-          Completion
         </Button>
       </div>
 
@@ -1024,401 +813,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {step === 2 && (
-        <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
-          <div className="pb-8 mb-4">
-            <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">
-              Training The Next Greatest Artist...
-            </h2>
-          </div>
-
-          <div className="w-full max-w-[600px] bg-black rounded-[32px] p-0 h-[350px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col my-auto">
-            <div className="bg-[#1a1a1a] p-4 flex gap-2 w-full border-b border-gray-800">
-              <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-              <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-            </div>
-            <div className="flex-1 p-4 overflow-hidden relative">
-              <CodeScroller onComplete={handleTrainingComplete} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="flex-1 w-full flex flex-col pt-12 pb-[100px] h-full relative">
-          {/* ISOLATED FIXED HEADERS AT THE TOP */}
-          <div className="w-full flex flex-col lg:flex-row items-center lg:items-start justify-center gap-1 xl:gap-1 px-4 mb-4 flex-shrink-0 animate-in fade-in duration-500">
-            <div className="w-full lg:flex-1 lg:w-0">
-              <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">
-                Drop It on ANYTHING
-              </h2>
-            </div>
-
-            <div className="hidden lg:block w-[3px] opacity-0" />
-
-            <div className="w-full lg:flex-1 lg:w-0">
-              <h2 className="text-2xl font-['Rock_Salt'] text-black text-center mt-6 lg:mt-0">
-                Copy Paste BASICS
-              </h2>
-            </div>
-          </div>
-
-          {/* SCROLLABLE BODY CONTENT */}
-          <div className="flex-1 w-full flex flex-col lg:flex-row items-stretch justify-center gap-1 xl:gap-1 px-4 overflow-y-auto animate-in fade-in duration-700">
-            {/* LEFT BODY COLUMN (EMBED) */}
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-start lg:justify-center pb-12 lg:pt-8">
-              <div className="w-full max-w-[460px] flex flex-col items-center gap-4">
-                <p className="text-[16px] font-['Roboto_Condensed',sans-serif] font-medium tracking-wide text-gray-600 leading-relaxed text-center">
-                  Dont Even think twice just Copy Paste It anywhere, Your girlfriend's website your
-                  grandma's blog it doesn't matter.
-                </p>
-                <div className="w-full bg-black rounded-2xl p-0 h-auto min-h-[120px] shadow-2xl overflow-hidden border-[3px] border-outset border-gray-600 relative flex flex-col">
-                  <div className="bg-[#1a1a1a] px-4 py-3 flex items-center gap-2 w-full border-b border-gray-800 flex-shrink-0">
-                    <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-                    <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-                    <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-                    <span className="ml-2 text-[10px] font-mono text-gray-400 tracking-widest uppercase">
-                      embed.html
-                    </span>
-                  </div>
-                  <div className="flex-1 p-4 overflow-auto">
-                    <pre className="font-mono text-[11px] text-[#00ff00] leading-relaxed whitespace-pre-wrap break-all">
-                      {embedCode}
-                    </pre>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center gap-8 mt-2">
-                  <div className="relative flex flex-col items-center gap-2">
-                    <button
-                      onClick={handleCopyEmbed}
-                      className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
-                      title="Copy Embed Code"
-                    >
-                      <CopyIcon size={28} />
-                    </button>
-                    {copied && (
-                      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest text-green-600 animate-in fade-in slide-in-from-bottom-1">
-                        Copied!
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleDownloadCode}
-                    className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
-                    title="Download Code"
-                  >
-                    <DownloadIcon size={28} />
-                  </button>
-                  <button
-                    onClick={handleShareEmbed}
-                    className="p-2 text-black hover:text-gray-600 active:scale-[0.9] transition-all"
-                    title="Share Embed"
-                  >
-                    <Share2 className="w-7 h-7" />
-                  </button>
-                </div>
-
-                <div className="w-full flex justify-center text-gray-600 text-[14px] md:text-[16px] mt-4">
-                  <div className="flex flex-col items-center text-center max-w-[460px]">
-                    <span className="font-['Rock_Salt'] mb-1">Still Need Help ?? Hit us up @</span>
-                    <a
-                      href="mailto:HelpMeCopyPaste@tattty.com"
-                      className="font-['Roboto_Condensed',sans-serif] font-bold text-black hover:underline"
-                    >
-                      HelpMeCopyPaste@tattty.com
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SEPARATOR */}
-            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 mx-4" />
-
-            {/* RIGHT BODY COLUMN (INSTALLATION) */}
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col items-center justify-center pb-12 mt-8 lg:mt-0">
-              <div className="w-full max-w-[500px] flex flex-col gap-4">
-                <Tabs value={activePlatform} onValueChange={setActivePlatform} className="w-full">
-                  <TabsList className="w-full flex justify-center bg-transparent gap-2 h-auto p-0 mt-8">
-                    {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
-                      <TabsTrigger
-                        key={platform}
-                        value={platform}
-                        className={cn(
-                          'px-4 py-2 rounded-full font-bold text-[10px] tracking-widest uppercase transition-all border-none shadow-none bg-gray-100 text-gray-500 data-[active]:bg-black data-[active]:text-white hover:bg-gray-200'
-                        )}
-                      >
-                        {platform}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  <div className="px-4 flex items-start mt-4 h-[250px]">
-                    {['shopify', 'squarespace', 'wix', 'wordpress'].map((platform) => (
-                      <TabsContent
-                        key={platform}
-                        value={platform}
-                        className="w-full m-0 border-none p-0 focus-visible:ring-0"
-                      >
-                        <div className="space-y-2 w-full">
-                          {platformInstructions[platform].map((instruction, idx) => {
-                            const displayInstruction = instruction
-                              .replace('{{version=}}', `version=${versionId || 'VERSION_ID'}`)
-                              .replace('{{gen_id}}', `gen_id=${embedRandom || 'GEN_ID'}`);
-
-                            return (
-                              <p
-                                key={idx}
-                                className={cn(
-                                  "font-['Roboto_Condensed',sans-serif] text-[14px] md:text-[16px] font-medium text-gray-700 leading-relaxed",
-                                  instruction.startsWith('<iframe') &&
-                                    'font-mono bg-gray-100 p-2 rounded mt-1 break-all border border-gray-200'
-                                )}
-                              >
-                                {displayInstruction}
-                              </p>
-                            );
-                          })}
-                        </div>
-                      </TabsContent>
-                    ))}
-                  </div>
-                </Tabs>
-              </div>
-            </div>
-          </div>
-
-          {/* ISOLATED FIXED FOOTER AT THE BOTTOM */}
-          <div className="fixed bottom-0 left-0 right-0 w-full py-6 flex justify-center bg-gradient-to-t from-white via-white to-transparent pointer-events-none z-50">
-            <Button className="pointer-events-auto bg-black text-white px-12 py-4 rounded-xl font-black text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 border-4 border-black animate-in slide-in-from-bottom-8 duration-700 delay-500">
-              GO TO MY MODEL
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ArtistCard({
-  modelName,
-  artistName,
-  tags,
-  description,
-  status,
-  showStars,
-}: {
-  modelName: string;
-  artistName: string;
-  tags: string[];
-  description: string;
-  status: 'idle' | 'training' | 'online';
-  showStars?: boolean;
-}) {
-  const statusLabel =
-    status === 'online' ? 'Online' : status === 'training' ? 'Training' : 'Offline';
-  const statusClass =
-    status === 'online'
-      ? 'bg-green-100 text-green-700'
-      : status === 'training'
-        ? 'bg-yellow-100 text-yellow-700'
-        : 'bg-gray-100 text-gray-600';
-
-  const visibleTags = (tags || [])
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .slice(0, 3);
-
-  return (
-    <div className="w-full max-w-[320px] rounded-[32px] bg-white shadow-2xl border border-gray-100 overflow-hidden">
-      <div className="p-6 space-y-4">
-        {/* Star Rating - Above Model Label */}
-        {showStars && (
-          <div className="flex items-center justify-center gap-1 pb-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-              </svg>
-            ))}
-          </div>
-        )}
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">Model</p>
-            <h3 className="text-lg font-black uppercase truncate">{modelName}</h3>
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 mt-2">
-              Artist
-            </p>
-            <p className="text-sm font-black uppercase truncate">{artistName || '—'}</p>
-          </div>
-
-          <Badge
-            variant="secondary"
-            className={cn(
-              'px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase flex-shrink-0',
-              statusClass
-            )}
-          >
-            {statusLabel}
-          </Badge>
-        </div>
-
-        {visibleTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {visibleTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className="px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase bg-gray-100 text-gray-700"
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">
-            Description
-          </p>
-          <pre className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">
-            {description?.length ? description : '—'}
-          </pre>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Training terminal simulation
-const codeSnippets = [
-  '> INITIALIZING TATTOO STYLE ENGINE...',
-  '> LOADING IMAGE DATASET BLOCKS...',
-  '> ALLOCATING VRAM TENSORS...',
-  'import torch',
-  'import torch.nn as nn',
-  'from diffusers import StableDiffusionPipeline',
-  "model = StableDiffusionPipeline.from_pretrained('base_model')",
-  "model.to('cuda')",
-  '> EXTRACTING STYLE FEATURES...',
-  'Dataset size: 28 images. Resolution: 1024x1024',
-  '> SETTING UP AdamW OPTIMIZER (lr=1e-5)...',
-  'STARTING TRAINING LOOP...',
-];
-
-// Add generic loss lines
-for (let i = 1; i <= 20; i++) {
-  codeSnippets.push(
-    `Epoch [${i}/20] | Loss: ${(Math.random() * 0.1 + 0.05).toFixed(4)} | Step: ${i * 40}`
-  );
-}
-
-codeSnippets.push(
-  '> WEIGHTS CONVERGED SUCCESSFULLY.',
-  '> SAVING LoRA CHECKPOINTS...',
-  "model.save_pretrained('./models/artist_style')",
-  '> UPLOADING TO EDGE NETWORK...',
-  '> OPTIMIZING WEBGL EMBED RENDERER...',
-  '> DEPLOYMENT READY.',
-  "status = 'ONLINE'"
-);
-
-function CodeScroller({ onComplete }: { onComplete: () => void }) {
-  const [lines, setLines] = useState<string[]>([]);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-  const [isSlowMode, setIsSlowMode] = useState(false);
-
-  useEffect(() => {
-    let currentIndex = 0;
-
-    // Switch to slow mode after approx 3.5 seconds
-    const slowModeTimer = setTimeout(() => {
-      setIsSlowMode(true);
-    }, 3500);
-
-    const renderNextLine = () => {
-      if (currentIndex < codeSnippets.length) {
-        setLines((prev) => [...prev, codeSnippets[currentIndex]]);
-        currentIndex++;
-
-        // Determine speed based on mode and progress
-        let delay = 50; // default ultra fast
-
-        if (isSlowMode) {
-          // Slow down progressively more the closer we get to the end
-          const remainingLines = codeSnippets.length - currentIndex;
-          if (remainingLines < 5) {
-            delay = 800 + Math.random() * 500; // last few lines are very slow
-          } else {
-            delay = 300 + Math.random() * 400; // somewhat slow
-          }
-        } else {
-          // Fast mode - vary slightly
-          delay = 20 + Math.random() * 40;
-        }
-
-        if (currentIndex < codeSnippets.length) {
-          setTimeout(renderNextLine, delay);
-        } else {
-          setTimeout(onComplete, 1000);
-        }
-      }
-    };
-
-    const initialTimer = setTimeout(renderNextLine, 100);
-
-    return () => {
-      clearTimeout(slowModeTimer);
-      clearTimeout(initialTimer);
-    };
-  }, [isSlowMode, onComplete]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [lines]);
-
-  return (
-    <div
-      ref={scrollRef}
-      className="h-full w-full overflow-y-auto font-mono text-xs sm:text-sm text-[#00ff00] leading-relaxed pb-4 custom-scrollbar pr-2"
-    >
-      {lines.map((line, i) => (
-        <div key={i} className="mb-0.5 opacity-90 break-all">
-          {line}
-        </div>
-      ))}
-      <div className="inline-block w-2 h-[1em] bg-[#00ff00] animate-pulse ml-1 align-middle" />
-    </div>
-  );
-}
-
-function StatusItem({ text, delay }: { text: string; delay: number }) {
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setActive(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-4 transition-all duration-500',
-        active ? 'opacity-100 translate-x-0' : 'opacity-30 -translate-x-4'
-      )}
-    >
-      <div
-        className={cn(
-          'w-8 h-8 rounded-full flex items-center justify-center border-[3px] transition-colors duration-500 flex-shrink-0',
-          active ? 'border-black bg-black text-white' : 'border-gray-300 text-transparent'
-        )}
-      >
-        <Check className="w-4 h-4" strokeWidth={4} />
-      </div>
-      <span className="font-bold tracking-[0.2em] uppercase text-xs md:text-sm">{text}</span>
     </div>
   );
 }
