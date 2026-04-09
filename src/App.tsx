@@ -380,28 +380,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-black flex flex-col pt-[56px] md:pt-[76px]">
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow-lg border border-gray-200 mx-auto">
-        <Button
-          variant="ghost"
-          onClick={() => setStep(1)}
-          className={cn(
-            'px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors',
-            step === 1 ? 'bg-black text-white' : 'hover:bg-gray-100'
-          )}
-        >
-          Setup
-        </Button>
-      </div>
-
       {step === 1 && (
         <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
-          <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 py-16 px-4 animate-in fade-in duration-500">
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+          <div className="w-full flex flex-col md:flex-row items-stretch justify-center gap-8 xl:gap-12 py-16 px-4 animate-in fade-in duration-500">
+            <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">1. Upload</h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
-                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 md:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
                   {/* ARTIST NAME */}
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">
@@ -656,16 +643,16 @@ export default function App() {
               </div>
             </div>
 
-            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
+            <div className="hidden md:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
 
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+            <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">
                   2. Brand & Train
                 </h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
-                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 md:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px] flex flex-col gap-6">
                   <div>
                     <label className="block text-[10px] font-bold tracking-[0.2em] text-black mb-2 uppercase text-center">
                       Trigger Word
@@ -726,11 +713,11 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <div className="pt-4 flex items-center justify-center w-full px-4 sm:px-8 lg:px-0">
+              <div className="pt-4 flex items-center justify-center w-full px-4 sm:px-8 md:px-0">
                 <Button
                   onClick={handleTrain}
                   disabled={isUploading}
-                  className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px] bg-black text-white rounded-xl py-4 font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-900 active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUploading ? (
                     <span className="flex items-center gap-2">
@@ -744,16 +731,16 @@ export default function App() {
               </div>
             </div>
 
-            <div className="hidden lg:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
+            <div className="hidden md:block w-[3px] self-stretch border-l-[3px] border-black border-outset opacity-20 my-12" />
 
-            <div className="w-full lg:flex-1 lg:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
+            <div className="w-full md:flex-1 md:w-0 flex flex-col animate-in fade-in zoom-in duration-700 delay-150 fill-mode-both">
               <div className="pb-4 mb-4">
                 <h2 className="text-2xl font-['Rock_Salt'] text-black text-center">
                   3. Then What?
                 </h2>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 lg:px-0">
-                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px]">
+              <div className="flex-1 flex flex-col items-center justify-center w-full px-4 sm:px-8 md:px-0">
+                <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[320px] xl:max-w-[380px]">
                   <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
