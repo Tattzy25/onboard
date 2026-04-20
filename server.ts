@@ -2,7 +2,6 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import multer from "multer";
-import { put } from '@vercel/blob';
 import { config } from 'dotenv';
 import fs from 'fs';
 
@@ -35,25 +34,6 @@ async function startServer() {
         return res.status(400).json({ error: "No zip file provided" });
       }
 
-      function slugify(text: string): string {
-        return text
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, "")
-          .replace(/[\s_]+/g, "-")
-          .replace(/-+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 30);
-      }
-
-      function generateShortSku(): string {
-        const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-        let suffix = "";
-        for (let i = 0; i < 3; i++) {
-          suffix += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return `TaT${suffix}`;
-      }
-
       // Validate ZIP
       const allowedZip = ["zip"];
       const rawZipExt = zipFile.originalname.split(".").pop()?.toLowerCase();
@@ -74,28 +54,54 @@ async function startServer() {
         }
       }
 
-      const slug = modelName ? slugify(modelName) : slugify(zipFile.originalname.replace(/\.[^/.]+$/, ""));
-      const sku = generateShortSku();
-      
-      // 1. Upload ZIP
-      const zipPathname = `training/${slug}-${sku}-dataset.zip`;
-      const zipBlob = await put(zipPathname, fs.createReadStream(zipFile.path), {
-        access: "public",
-        addRandomSuffix: false,
-        multipart: true,
-      });
-
-      // 2. Upload Cover
-      let coverUrl = '';
+      const workerUploadForm = new FormData();
+      const zipBuffer = fs.readFileSync(zipFile.path);
+      workerUploadForm.append(
+        "zip",
+        new Blob([zipBuffer], { type: zipFile.mimetype || "application/zip" }),
+        zipFile.originalname
+      );
       if (coverFile) {
-        const coverExt = `.${coverFile.originalname.split(".").pop()?.toLowerCase()}`;
-        const coverPathname = `training/${slug}-${sku}-cover${coverExt}`;
-        const coverBlob = await put(coverPathname, fs.createReadStream(coverFile.path), {
-          access: "public",
-          addRandomSuffix: false,
-          multipart: false,
-        });
-        coverUrl = coverBlob.url;
+        const coverBuffer = fs.readFileSync(coverFile.path);
+        workerUploadForm.append(
+          "cover",
+          new Blob([coverBuffer], { type: coverFile.mimetype || "application/octet-stream" }),
+          coverFile.originalname
+        );
+      }
+
+      const workerPrefix = `users/${userId}/`;
+      const workerBaseUrl = process.env.WORKER_UPLOAD_URL;
+
+      if (!workerBaseUrl) {
+        throw new Error("WORKER_UPLOAD_URL is not set");
+      }
+
+      const workerUploadResponse = await fetch(
+        `${workerBaseUrl}/upload-training?prefix=${encodeURIComponent(workerPrefix)}`,
+        {
+          method: "POST",
+          body: workerUploadForm,
+        }
+      );
+
+      if (!workerUploadResponse.ok) {
+        const workerErrorText = await workerUploadResponse.text();
+        throw new Error(`Worker upload failed: Status ${workerUploadResponse.status} - ${workerErrorText}`);
+      }
+
+      const workerUploadResult = await workerUploadResponse.json() as {
+        zipUrl: string;
+        coverUrl?: string;
+        zipKey: string;
+        coverKey?: string;
+      };
+
+      if (!workerUploadResult.zipUrl) {
+        throw new Error("Worker upload failed: missing zipUrl in response.");
+      }
+      if (coverFile && !workerUploadResult.coverUrl) {
+        throw new Error("Worker upload failed: cover file was uploaded but coverUrl is missing in response.");
       }
 
       // 3. Call Dify API from Server
@@ -103,8 +109,8 @@ async function startServer() {
         inputs: {
           name: modelName,
           description: description,
-          cover_image_url: coverUrl,
-          input_images: zipBlob.url,
+          cover_image_url: coverFile ? workerUploadResult.coverUrl! : "",
+          input_images: workerUploadResult.zipUrl,
           trigger_word: triggerWord,
           artist_name: artistName,
           artist_tags: tagsArray.join(", ")
@@ -129,9 +135,17 @@ async function startServer() {
       }
 
       // Cleanup temp files
-      try { fs.unlinkSync(zipFile.path); } catch (e) {}
+      try {
+        fs.unlinkSync(zipFile.path);
+      } catch (cleanupError) {
+        console.warn("Failed to remove temp zip file:", cleanupError);
+      }
       if (coverFile) {
-        try { fs.unlinkSync(coverFile.path); } catch (e) {}
+        try {
+          fs.unlinkSync(coverFile.path);
+        } catch (cleanupError) {
+          console.warn("Failed to remove temp cover file:", cleanupError);
+        }
       }
 
       res.json({ success: true });
@@ -139,10 +153,18 @@ async function startServer() {
       // Cleanup on error
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       if (files?.zip?.[0] && fs.existsSync(files.zip[0].path)) {
-        try { fs.unlinkSync(files.zip[0].path); } catch (e) {}
+        try {
+          fs.unlinkSync(files.zip[0].path);
+        } catch (cleanupError) {
+          console.warn("Failed to remove temp zip file after error:", cleanupError);
+        }
       }
       if (files?.cover?.[0] && fs.existsSync(files.cover[0].path)) {
-        try { fs.unlinkSync(files.cover[0].path); } catch (e) {}
+        try {
+          fs.unlinkSync(files.cover[0].path);
+        } catch (cleanupError) {
+          console.warn("Failed to remove temp cover file after error:", cleanupError);
+        }
       }
       
       console.error("Upload/Webhook error:", error);

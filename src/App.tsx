@@ -6,7 +6,6 @@ import {
   Layers,
   Globe,
   Users,
-  Share2,
   X,
   Image as ImageIcon,
   AlertCircle,
@@ -19,12 +18,15 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
 import { SystemAlert } from '../components/ui/alert';
-import { CopyIcon } from '../components/ui/copy';
-import { DownloadIcon } from '../components/ui/download';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { Textarea } from '../components/ui/textarea';
-import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
+
+type ShopifyWindow = Window & {
+  Shopify?: {
+    checkout?: { customer?: { id?: string } };
+    shop?: string;
+  };
+};
 
 const systemToast = {
   error: (msg: string) => {
@@ -54,7 +56,7 @@ const systemToast = {
 };
 
 export default function App() {
-  const [step, setStep] = useState(1);
+  const step = 1;
   const [files, setFiles] = useState<File[]>([]);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
@@ -67,9 +69,6 @@ export default function App() {
     message: '',
     imageCount: 0,
   });
-  const [imageDetails, setImageDetails] = useState<
-    { filename: string; width: number; height: number }[]
-  >([]);
   const [triggerWord, setTriggerWord] = useState('');
   const [modelName, setModelName] = useState('');
   const [artistName, setArtistName] = useState('');
@@ -77,7 +76,6 @@ export default function App() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>('');
 
   // Detect user ID from Shopify context
@@ -91,15 +89,16 @@ export default function App() {
         return;
       }
 
+      const w = window as ShopifyWindow;
       // Check for Shopify customer ID
-      const shopifyCustomer = (window as any).Shopify?.checkout?.customer?.id;
+      const shopifyCustomer = w.Shopify?.checkout?.customer?.id;
       if (shopifyCustomer) {
         setUserId(shopifyCustomer);
         return;
       }
 
       // Check for Shopify shop context
-      const shopifyShop = (window as any).Shopify?.shop;
+      const shopifyShop = w.Shopify?.shop;
       if (shopifyShop) {
         setUserId(shopifyShop);
         return;
@@ -195,7 +194,6 @@ export default function App() {
     }
 
     setIsUploading(true);
-    setUploadError(null);
 
     try {
       // Upload the model to the backend with all required data
@@ -214,7 +212,6 @@ export default function App() {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
       console.error('Model upload failed:', error);
-      setUploadError(errorMsg);
       alert(`Upload failed: ${errorMsg}`);
     } finally {
       setIsUploading(false);
@@ -242,7 +239,6 @@ export default function App() {
     const file = acceptedFiles[0];
     setFiles([file]);
     setZipValidation({ status: 'checking', message: 'Checking contents...', imageCount: 0 });
-    setImageDetails([]);
 
     try {
       if (!file.name.toLowerCase().endsWith('.zip')) {
@@ -256,7 +252,7 @@ export default function App() {
       const zip = await JSZip.loadAsync(file);
       const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
       const imageFiles: JSZip.JSZipObject[] = [];
-      let rejectedFiles: string[] = [];
+      const rejectedFiles: string[] = [];
 
       zip.forEach((relativePath, zipEntry) => {
         if (zipEntry.dir) return;
@@ -308,12 +304,10 @@ export default function App() {
       }
 
       // Check integrity of each image
-      const details: { filename: string; width: number; height: number }[] = [];
-
       for (const imgFile of imageFiles) {
         const blob = await imgFile.async('blob');
         try {
-          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          await new Promise<HTMLImageElement>((resolve, reject) => {
             const url = URL.createObjectURL(blob);
             const image = new Image();
             image.onload = () => {
@@ -326,8 +320,6 @@ export default function App() {
             };
             image.src = url;
           });
-
-          details.push({ filename: imgFile.name, width: img.width, height: img.height });
         } catch (err) {
           systemToast.error(err instanceof Error ? err.message : 'Invalid image detected.');
           setZipValidation({
@@ -345,7 +337,6 @@ export default function App() {
         message: `${imageFiles.length} images validated.`,
         imageCount: imageFiles.length,
       });
-      setImageDetails(details);
     } catch (err) {
       setZipValidation({
         status: 'error',
@@ -359,7 +350,6 @@ export default function App() {
   const removeZipFile = () => {
     setFiles([]);
     setZipValidation({ status: 'idle', message: '', imageCount: 0 });
-    setImageDetails([]);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -379,7 +369,7 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col pt-[56px] md:pt-[76px]">
+    <div className="min-h-screen bg-white text-black flex flex-col pt-[20px]">
       {step === 1 && (
         <div className="flex-1 w-full max-w-7xl mx-auto my-auto flex flex-col">
           <div className="w-full flex flex-col lg:flex-row items-stretch justify-center gap-8 xl:gap-12 py-16 px-4 animate-in fade-in duration-500">
@@ -490,7 +480,7 @@ export default function App() {
                         className="w-full min-h-[55px] rounded-xl p-3 flex flex-col items-center justify-center bg-transparent text-center"
                       >
                         <div className="flex items-center gap-3 w-full">
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                             <Archive className="w-5 h-5 text-gray-700" />
                           </div>
                           <div className="flex-1 min-w-0 text-left">
@@ -503,7 +493,7 @@ export default function App() {
                               </div>
                             ) : zipValidation.status === 'error' ? (
                               <div className="flex items-center gap-1 mt-1">
-                                <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                                <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
                                 <div className="text-[10px] text-red-500 leading-tight">
                                   {zipValidation.message}
                                 </div>
@@ -520,7 +510,7 @@ export default function App() {
                           <Button
                             type="button"
                             onClick={removeZipFile}
-                            className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 p-1"
+                            className="text-gray-400 hover:text-red-500 transition-colors shrink-0 p-1"
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -528,6 +518,7 @@ export default function App() {
                       </div>
                     ) : (
                       <div
+                        {...getRootProps()}
                         style={{
                           borderColor: '#000000',
                           borderStyle: 'outset',
@@ -585,7 +576,7 @@ export default function App() {
                         className="w-full min-h-[55px] rounded-xl p-3 flex flex-col items-center justify-center bg-transparent text-center"
                       >
                         <div className="flex items-center gap-2 w-full">
-                          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                             <img
                               src={coverImagePreview}
                               alt="Cover preview"
@@ -606,7 +597,7 @@ export default function App() {
                               e.stopPropagation();
                               removeCoverImage();
                             }}
-                            className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 p-1"
+                            className="text-gray-400 hover:text-red-500 transition-colors shrink-0 p-1"
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -614,6 +605,7 @@ export default function App() {
                       </div>
                     ) : (
                       <div
+                        {...getCoverRootProps()}
                         style={{
                           borderColor: '#000000',
                           borderStyle: 'outset',
@@ -741,7 +733,7 @@ export default function App() {
                 <div className="w-full max-w-full sm:max-w-[400px] md:max-w-[500px] lg:max-w-[320px] xl:max-w-[380px]">
                   <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3" strokeWidth={3} />
                       </div>
                       <span className="text-xs font-bold tracking-widest uppercase">
@@ -749,7 +741,7 @@ export default function App() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                         <Layers className="w-3 h-3" strokeWidth={3} />
                       </div>
                       <span className="text-xs font-bold tracking-widest uppercase">
@@ -757,7 +749,7 @@ export default function App() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
                         <Globe className="w-3 h-3" strokeWidth={3} />
                       </div>
                       <span className="text-xs font-bold tracking-widest uppercase">
@@ -765,7 +757,7 @@ export default function App() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center flex-shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
                         <Users className="w-3 h-3" strokeWidth={3} />
                       </div>
                       <span className="text-xs font-bold tracking-widest uppercase">
