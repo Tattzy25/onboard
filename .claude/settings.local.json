@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST https://hi-hello-mufuka-production.up.railway.app/mcp -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{ *)"
+    ]
+  }
+}

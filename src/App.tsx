@@ -256,6 +256,14 @@ export default function App() {
 
       zip.forEach((relativePath, zipEntry) => {
         if (zipEntry.dir) return;
+        // Ignore macOS hidden files (.DS_Store), __MACOSX metadata, Windows Thumbs.db
+        const filename = relativePath.split('/').pop() || '';
+        if (
+          filename.startsWith('.') ||
+          relativePath.startsWith('__MACOSX/') ||
+          filename === 'Thumbs.db'
+        )
+          return;
         const ext = '.' + relativePath.split('.').pop()!.toLowerCase();
         if (imageExtensions.includes(ext)) {
           imageFiles.push(zipEntry);
@@ -284,19 +292,6 @@ export default function App() {
         setZipValidation({
           status: 'error',
           message: 'Maximum 40 images allowed.',
-          imageCount: imageFiles.length,
-        });
-        setFiles([]);
-        return;
-      }
-
-      if (imageFiles.length < 20) {
-        systemToast.error(
-          `ZIP contains too few images (${imageFiles.length}). Please include at least 20 images.`
-        );
-        setZipValidation({
-          status: 'error',
-          message: 'Include at least 20 images.',
           imageCount: imageFiles.length,
         });
         setFiles([]);

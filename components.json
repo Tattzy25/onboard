@@ -23,6 +23,7 @@
   },
   "registries": {
     "@soundcn": "https://soundcn.xyz/r/{name}.json",
-    "@iconiq": "https://iconiqui.com/r/{name}.json"
+    "@iconiq": "https://iconiqui.com/r/{name}.json",
+    "@rescript-shadcn": "https://rescript-shadcn.miriad.studio/r/{name}.json"
   }
 }
